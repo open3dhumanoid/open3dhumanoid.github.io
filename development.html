@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Development — Vitruvian</title>
+  <meta name="description" content="Development articles for the open-source Vitruvian humanoid robot.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech&amp;family=Share+Tech+Mono&amp;display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="pages.css">
+  <script src="script.js" defer></script>
+  <script src="development.js" defer></script>
+</head>
+<body>
+
+<div class="ruler" aria-hidden="true"></div>
+
+<!-- ============ Header ============ -->
+<header class="site-header container">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="s-ink" cx="20" cy="20" r="18.5" fill="none" stroke-width="1"/>
+        <path class="s-acc" d="M20 1V39M1 20H39" fill="none" stroke-width="0.6" stroke-dasharray="4 1.5 1 1.5"/>
+        <path class="s-ink" data-art="logo" fill="none" stroke-width="1.3"/>
+      </svg>
+      <span class="brand-name">Vitruvian</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html#robot"><span class="num">01</span>Robot</a>
+      <a href="development.html" aria-current="page"><span class="num">02</span>Development</a>
+      <a href="guides.html"><span class="num">03</span>Build guides</a>
+      <a href="team.html"><span class="num">04</span>Team</a>
+    </div>
+    <a class="btn btn--solid btn--sm" href="index.html#follow">Follow the project</a>
+  </nav>
+</header>
+
+<main>
+  <section class="page-intro container">
+    <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Development log — latest first</p>
+    <h1 class="page-title">How it’s coming along</h1>
+    <p class="lede">Articles on design decisions, test results and lessons learned while building Vitruvian. The five newest are shown; use the arrows to go back through the archive.</p>
+  </section>
+
+  <section class="section container">
+    <header class="section-head">
+      <span class="sec-num">§ 01</span>
+      <h2>Latest articles</h2>
+      <span class="page-num">— 01 / 01 —</span>
+    </header>
+    <div class="dev-bar">
+      <span class="meta" data-dev-count role="status" aria-live="polite"></span>
+      <div class="dev-arrows">
+        <button type="button" class="btn btn--sm" data-dev-prev aria-label="Newer articles"><svg class="arrow arrow-left" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></button>
+        <button type="button" class="btn btn--sm" data-dev-next aria-label="Older articles"><svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></button>
+      </div>
+    </div>
+    <div class="dev-track" data-dev-track tabindex="0" role="region" aria-label="Development articles"></div>
+    <noscript><p class="body-lg">Turn on JavaScript to browse the development articles.</p></noscript>
+  </section>
+</main>
+
+<!-- ============ Footer ============ -->
+<footer class="site-footer container">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="brand">
+        <svg class="brand-mark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="s-ink" cx="20" cy="20" r="18.5" fill="none" stroke-width="1"/>
+        <path class="s-acc" d="M20 1V39M1 20H39" fill="none" stroke-width="0.6" stroke-dasharray="4 1.5 1 1.5"/>
+        <path class="s-ink" data-art="logo" fill="none" stroke-width="1.3"/>
+      </svg>
+        <span class="brand-name">Vitruvian</span>
+      </div>
+      <p>An open-source, 3D-printable humanoid robot based on the Unitree G1. Not affiliated with Unitree.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Project">
+      <h3>Project</h3>
+      <ul>
+        <li><a href="index.html#robot">The robot</a></li>
+        <li><a href="index.html#status">Roadmap</a></li>
+        <li><a href="index.html#follow">Updates</a></li>
+        <li><a href="#">FAQ</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="Learn">
+      <h3>Learn</h3>
+      <ul>
+        <li><a href="development.html">Development log</a></li>
+        <li><a href="guides.html">Build guides</a></li>
+        <li><a href="#">Bill of materials</a></li>
+        <li><a href="#">Safety</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="Community">
+      <h3>Community</h3>
+      <ul>
+        <li><a href="team.html">Team</a></li>
+        <li><a href="team.html#collaborators">Collaborators</a></li>
+        <li><a href="#">Source code</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <dl class="title-block title-block--footer">
+    <div class="wide"><dt>Project</dt><dd class="caps">Vitruvian humanoid</dd></div>
+    <div><dt>Sheet</dt><dd>001-A</dd></div>
+    <div><dt>Size</dt><dd>A2</dd></div>
+    <div><dt>Scale</dt><dd>1 : 1</dd></div>
+    <div><dt>Date</dt><dd>24.10.26</dd></div>
+    <div><dt>Rev</dt><dd class="accent">R0</dd></div>
+  </dl>
+
+  <div class="footer-bottom">
+    <span>© Vitruvian project contributors</span>
+    <div class="scale" aria-hidden="true">
+      <div class="scale-bar"><span></span><span></span><span></span><span></span></div>
+      <div class="scale-labels"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span></div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
