@@ -4,14 +4,14 @@
 // SAMPLE ENTRIES: replace with your real articles.
 // image: path to a picture ("" shows a blueprint placeholder). link: article page.
 const POSTS = [
-  { date: "2026-10-18", tag: "Actuators",   title: "Hip actuator: first prototype",       description: "Notes from the first printed and assembled hip joint.",                image: "", link: "#" },
-  { date: "2026-10-02", tag: "Actuators",   title: "Choosing a gearbox for the knee",     description: "The options we compared and what we picked.",                         image: "", link: "#" },
-  { date: "2026-09-20", tag: "Materials",   title: "Printing the leg: which filament?",   description: "Test prints and what they tell us about strength and weight.",        image: "", link: "#" },
-  { date: "2026-09-05", tag: "Design",      title: "Matching the G1 joint layout",        description: "How the Unitree G1’s joints map onto our printed frame.",              image: "", link: "#" },
-  { date: "2026-08-22", tag: "Simulation",  title: "Setting up the simulation model",     description: "Turning the CAD into a robot model a simulator can load.",            image: "", link: "#" },
-  { date: "2026-08-04", tag: "Design",      title: "Torso frame, version 2",              description: "What changed from the first torso and why.",                          image: "", link: "#" },
-  { date: "2026-07-19", tag: "Electronics", title: "Wiring harness and power budget",     description: "Planning power and signal routing before building.",                  image: "", link: "#" },
-  { date: "2026-07-01", tag: "Project",     title: "Project kickoff and goals",           description: "What we’re building, who it’s for, and how we’ll work.",               image: "", link: "#" }
+  { date: "2026-10-26", tag: "Actuators",   title: "Actuator design",       description: "Actuator design choices",                image: "", link: "development/motor.html" },
+  // { date: "2026-10-02", tag: "Actuators",   title: "Choosing a gearbox for the knee",     description: "The options we compared and what we picked.",                         image: "", link: "#" },
+  // { date: "2026-09-20", tag: "Materials",   title: "Printing the leg: which filament?",   description: "Test prints and what they tell us about strength and weight.",        image: "", link: "#" },
+  // { date: "2026-09-05", tag: "Design",      title: "Matching the G1 joint layout",        description: "How the Unitree G1’s joints map onto our printed frame.",              image: "", link: "#" },
+  // { date: "2026-08-22", tag: "Simulation",  title: "Setting up the simulation model",     description: "Turning the CAD into a robot model a simulator can load.",            image: "", link: "#" },
+  // { date: "2026-08-04", tag: "Design",      title: "Torso frame, version 2",              description: "What changed from the first torso and why.",                          image: "", link: "#" },
+  // { date: "2026-07-19", tag: "Electronics", title: "Wiring harness and power budget",     description: "Planning power and signal routing before building.",                  image: "", link: "#" },
+  // { date: "2026-07-01", tag: "Project",     title: "Project kickoff and goals",           description: "What we’re building, who it’s for, and how we’ll work.",               image: "", link: "#" }
 ];
 
 (function () {

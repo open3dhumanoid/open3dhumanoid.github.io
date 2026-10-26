@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Actuator build guide — Vitruvian</title>
+  <meta name="description" content="How the Vitruvian humanoid’s joint actuators are built, with a joint map and torque table for the Unitree G1.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech&amp;family=Share+Tech+Mono&amp;display=swap">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../pages.css">
+  <script src="script.js" defer></script>
+  <script src="motor.js" defer></script>
+</head>
+<body>
+
+<div class="ruler" aria-hidden="true"></div>
+
+<!-- ============ Header ============ -->
+<header class="site-header container">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="s-ink" cx="20" cy="20" r="18.5" fill="none" stroke-width="1"/>
+        <path class="s-acc" d="M20 1V39M1 20H39" fill="none" stroke-width="0.6" stroke-dasharray="4 1.5 1 1.5"/>
+        <path class="s-ink" data-art="logo" fill="none" stroke-width="1.3"/>
+      </svg>
+      <span class="brand-name">Vitruvian</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html#robot"><span class="num">01</span>Robot</a>
+      <a href="development.html"><span class="num">02</span>Development</a>
+      <a href="guides.html" aria-current="page"><span class="num">03</span>Build guides</a>
+      <a href="team.html"><span class="num">04</span>Team</a>
+    </div>
+    <a class="btn btn--solid btn--sm" href="index.html#follow">Follow the project</a>
+  </nav>
+</header>
+
+<main>
+  <section class="page-intro container">
+    <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Build guide G.01 — actuators · status: draft</p>
+    <h1 class="page-title">Building the actuator</h1>
+    <p class="lede">Every joint is driven by the same kind of unit: a brushless motor, a 3D-printed cycloidal reducer, a magnetic encoder and a small driver on a CAN bus. This guide follows the Berkeley Humanoid Lite design and maps it onto the Unitree G1’s 29 joints.</p>
+  </section>
+
+  <!-- ============ § 01 — Diagram ============ -->
+  <section class="section container">
+    <header class="section-head">
+      <span class="sec-num">§ 01</span>
+      <h2>Which joint is which</h2>
+      <span class="page-num">— 01 / 06 —</span>
+    </header>
+    <div class="split">
+      <figure class="g1-fig">
+        <div class="g1-stage">
+          <!-- Replace this drawing with your G1 outline: <img src="img/g1-outline.svg" alt="Outline of the Unitree G1 with numbered joint locations">
+               then nudge each pin with its --x / --y values (percent of the picture). -->
+          <svg class="g1-art" viewBox="0 0 300 400" fill="none" aria-hidden="true">
+            <circle class="s-ink" cx="150" cy="42" r="22" stroke-width="1.2"/>
+            <path class="s-ink" d="M102 96H198L190 200H110Z M102 96L84 152L72 200 M198 96L216 152L228 200 M132 208L130 288L130 368 M168 208L170 288L170 368 M120 368H140 M160 368H180" stroke-width="1.2"/>
+            <path class="s-acc" d="M150 0V400M0 200H300" stroke-width=".5" stroke-dasharray="10 3 2 3" stroke-opacity=".6"/>
+          </svg>
+          <a class="pin" href="#ref-1" data-ref="1" style="--x:50%;--y:45%" aria-label="1: Waist">1</a>
+          <a class="pin" href="#ref-2" data-ref="2" style="--x:34%;--y:24%" aria-label="2: Shoulder">2</a>
+          <a class="pin" href="#ref-2" data-ref="2" style="--x:66%;--y:24%" aria-label="2: Shoulder">2</a>
+          <a class="pin" href="#ref-3" data-ref="3" style="--x:28%;--y:38%" aria-label="3: Elbow">3</a>
+          <a class="pin" href="#ref-3" data-ref="3" style="--x:72%;--y:38%" aria-label="3: Elbow">3</a>
+          <a class="pin" href="#ref-4" data-ref="4" style="--x:24%;--y:50%" aria-label="4: Wrist">4</a>
+          <a class="pin" href="#ref-4" data-ref="4" style="--x:76%;--y:50%" aria-label="4: Wrist">4</a>
+          <a class="pin" href="#ref-5" data-ref="5" style="--x:44%;--y:52%" aria-label="5: Hip">5</a>
+          <a class="pin" href="#ref-5" data-ref="5" style="--x:56%;--y:52%" aria-label="5: Hip">5</a>
+          <a class="pin" href="#ref-6" data-ref="6" style="--x:43%;--y:72%" aria-label="6: Knee">6</a>
+          <a class="pin" href="#ref-6" data-ref="6" style="--x:57%;--y:72%" aria-label="6: Knee">6</a>
+          <a class="pin" href="#ref-7" data-ref="7" style="--x:43%;--y:92%" aria-label="7: Ankle">7</a>
+          <a class="pin" href="#ref-7" data-ref="7" style="--x:57%;--y:92%" aria-label="7: Ankle">7</a>
+        </div>
+        <figcaption><span>Fig. 2 — joint locations</span><span>front view</span></figcaption>
+        <p class="g1-note">Placeholder outline. Swap in your G1 drawing and move the pins to match.</p>
+      </figure>
+      <div class="split-copy">
+        <h2>Seven locations, 29 joints</h2>
+        <p class="body-lg">Each number on the diagram is a joint location, and the same number appears in the Ref column of the table below. Left and right sides share a number. Hover or focus a number to highlight its rows.</p>
+        <dl class="specs">
+          <div><dt>1 — Waist</dt><dd>3 joints: yaw, roll, pitch</dd></div>
+          <div><dt>2 — Shoulder</dt><dd>6 joints: pitch, roll, yaw × 2</dd></div>
+          <div><dt>3 — Elbow</dt><dd>2 joints</dd></div>
+          <div><dt>4 — Wrist</dt><dd>6 joints: roll, pitch, yaw × 2</dd></div>
+          <div><dt>5 — Hip</dt><dd>6 joints: pitch, roll, yaw × 2</dd></div>
+          <div><dt>6 — Knee</dt><dd>2 joints</dd></div>
+          <div><dt>7 — Ankle</dt><dd>4 joints: pitch, roll × 2</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ § 02 — Table ============ -->
+  <section class="section container" id="joint-data">
+    <header class="section-head">
+      <span class="sec-num">§ 02</span>
+      <h2>Joint data</h2>
+      <span class="page-num">— 02 / 06 —</span>
+    </header>
+    <div class="section-intro">
+      <p class="body-lg">Mass, range of motion and torque limit for each joint of the Unitree G1 (29-joint configuration). Range is in radians and torque is assumed to be in N·m. The mass looks like the link mass from the robot model, not the actuator alone, so the 9.598 kg at the waist pitch is the whole upper body.</p>
+      <span class="meta">29 joints + floating base</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Ref</th><th>Joint</th><th class="r">Mass (kg)</th><th>Range (rad)</th><th class="r">Torque (N·m)</th></tr></thead>
+        <tbody>
+        <tr class="muted"><td class="ref">—</td><td>floating_base_joint (free)</td><td class="r">3.813</td><td>unlimited</td><td class="r">—</td></tr>
+        <tr data-ref="5" id="ref-5"><td class="ref">5</td><td>left_hip_pitch_joint</td><td class="r">1.35</td><td>−2.5307 to 2.8798</td><td class="r">±88</td></tr>
+        <tr data-ref="5"><td class="ref">5</td><td>left_hip_roll_joint</td><td class="r">1.52</td><td>−0.5236 to 2.9671</td><td class="r">±88</td></tr>
+        <tr data-ref="5"><td class="ref">5</td><td>left_hip_yaw_joint</td><td class="r">1.702</td><td>−2.7576 to 2.7576</td><td class="r">±88</td></tr>
+        <tr data-ref="6" id="ref-6"><td class="ref">6</td><td>left_knee_joint</td><td class="r">1.932</td><td>−0.087267 to 2.8798</td><td class="r">±139</td></tr>
+        <tr data-ref="7" id="ref-7"><td class="ref">7</td><td>left_ankle_pitch_joint</td><td class="r">0.074</td><td>−0.87267 to 0.5236</td><td class="r">±50</td></tr>
+        <tr data-ref="7"><td class="ref">7</td><td>left_ankle_roll_joint</td><td class="r">0.608</td><td>−0.2618 to 0.2618</td><td class="r">±50</td></tr>
+        <tr data-ref="5"><td class="ref">5</td><td>right_hip_pitch_joint</td><td class="r">1.35</td><td>−2.5307 to 2.8798</td><td class="r">±88</td></tr>
+        <tr data-ref="5"><td class="ref">5</td><td>right_hip_roll_joint</td><td class="r">1.52</td><td>−2.9671 to 0.5236</td><td class="r">±88</td></tr>
+        <tr data-ref="5"><td class="ref">5</td><td>right_hip_yaw_joint</td><td class="r">1.702</td><td>−2.7576 to 2.7576</td><td class="r">±88</td></tr>
+        <tr data-ref="6"><td class="ref">6</td><td>right_knee_joint</td><td class="r">1.932</td><td>−0.087267 to 2.8798</td><td class="r">±139</td></tr>
+        <tr data-ref="7"><td class="ref">7</td><td>right_ankle_pitch_joint</td><td class="r">0.074</td><td>−0.87267 to 0.5236</td><td class="r">±50</td></tr>
+        <tr data-ref="7"><td class="ref">7</td><td>right_ankle_roll_joint</td><td class="r">0.608</td><td>−0.2618 to 0.2618</td><td class="r">±50</td></tr>
+        <tr data-ref="1" id="ref-1"><td class="ref">1</td><td>waist_yaw_joint</td><td class="r">0.244</td><td>−2.618 to 2.618</td><td class="r">±88</td></tr>
+        <tr data-ref="1"><td class="ref">1</td><td>waist_roll_joint</td><td class="r">0.047</td><td>−0.52 to 0.52</td><td class="r">±50</td></tr>
+        <tr data-ref="1"><td class="ref">1</td><td>waist_pitch_joint</td><td class="r">9.598</td><td>−0.52 to 0.52</td><td class="r">±50</td></tr>
+        <tr data-ref="2" id="ref-2"><td class="ref">2</td><td>left_shoulder_pitch_joint</td><td class="r">0.718</td><td>−3.0892 to 2.6704</td><td class="r">±25</td></tr>
+        <tr data-ref="2"><td class="ref">2</td><td>left_shoulder_roll_joint</td><td class="r">0.643</td><td>−1.5882 to 2.2515</td><td class="r">±25</td></tr>
+        <tr data-ref="2"><td class="ref">2</td><td>left_shoulder_yaw_joint</td><td class="r">0.734</td><td>−2.618 to 2.618</td><td class="r">±25</td></tr>
+        <tr data-ref="3" id="ref-3"><td class="ref">3</td><td>left_elbow_joint</td><td class="r">0.6</td><td>−1.0472 to 2.0944</td><td class="r">±25</td></tr>
+        <tr data-ref="4" id="ref-4"><td class="ref">4</td><td>left_wrist_roll_joint</td><td class="r">0.085445</td><td>−1.97222 to 1.97222</td><td class="r">±25</td></tr>
+        <tr data-ref="4"><td class="ref">4</td><td>left_wrist_pitch_joint</td><td class="r">0.48405</td><td>−1.61443 to 1.61443</td><td class="r">±5</td></tr>
+        <tr data-ref="4"><td class="ref">4</td><td>left_wrist_yaw_joint</td><td class="r">0.254576</td><td>−1.61443 to 1.61443</td><td class="r">±5</td></tr>
+        <tr data-ref="2"><td class="ref">2</td><td>right_shoulder_pitch_joint</td><td class="r">0.718</td><td>−3.0892 to 2.6704</td><td class="r">±25</td></tr>
+        <tr data-ref="2"><td class="ref">2</td><td>right_shoulder_roll_joint</td><td class="r">0.643</td><td>−2.2515 to 1.5882</td><td class="r">±25</td></tr>
+        <tr data-ref="2"><td class="ref">2</td><td>right_shoulder_yaw_joint</td><td class="r">0.734</td><td>−2.618 to 2.618</td><td class="r">±25</td></tr>
+        <tr data-ref="3"><td class="ref">3</td><td>right_elbow_joint</td><td class="r">0.6</td><td>−1.0472 to 2.0944</td><td class="r">±25</td></tr>
+        <tr data-ref="4"><td class="ref">4</td><td>right_wrist_roll_joint</td><td class="r">0.085445</td><td>−1.97222 to 1.97222</td><td class="r">±25</td></tr>
+        <tr data-ref="4"><td class="ref">4</td><td>right_wrist_pitch_joint</td><td class="r">0.48405</td><td>−1.61443 to 1.61443</td><td class="r">±5</td></tr>
+        <tr data-ref="4"><td class="ref">4</td><td>right_wrist_yaw_joint</td><td class="r">0.254576</td><td>−1.61443 to 1.61443</td><td class="r">±5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ § 03 — Inside the actuator ============ -->
+  <section class="section section--wide container">
+    <div class="split">
+      <div class="split-copy">
+        <span class="sec-num">§ 03</span>
+        <h2>What’s inside</h2>
+        <p class="body-lg">The motor is a standard brushless drone motor. Its output goes into a 3D-printed cycloidal reducer, which spreads the load over many teeth and copes better with a desktop printer’s limited accuracy than planetary gears do. The original Berkeley Humanoid used 9:1 planetary actuators; the printable Lite version swaps in the cycloidal design, and that is the one we follow.</p>
+        <dl class="specs">
+          <div><dt>Material</dt><dd>PLA, FDM printed</dd></div>
+          <div><dt>Largest part</dt><dd>fits 200 × 200 × 200 mm</dd></div>
+          <div><dt>Communication</dt><dd>CAN, 1 Mbps</dd></div>
+          <div><dt>Berkeley sizes</dt><dd>6512 and 5010</dd></div>
+        </dl>
+      </div>
+      <div class="printout">
+        <div class="sprockets" aria-hidden="true"></div>
+        <div class="print-body">
+          <div class="pl pl--muted">**** Parts ****</div>
+          <div class="pl"><span class="ln">0010</span><span>Housing (printed)</span></div>
+          <div class="pl"><span class="ln">0020</span><span>Cycloidal disc (printed)</span></div>
+          <div class="pl"><span class="ln">0030</span><span>Input shaft (printed)</span></div>
+          <div class="pl"><span class="ln">0040</span><span>Brass hex standoff</span></div>
+          <div class="pl"><span class="ln">0050</span><span>Output shaft (printed)</span></div>
+          <div class="pl"><span class="ln">0060</span><span>Bearings</span></div>
+          <div class="pl"><span class="ln">0070</span><span>BLDC drone motor</span></div>
+          <div class="pl"><span class="ln">0080</span><span>AS5600 encoder + magnet</span></div>
+          <div class="pl"><span class="ln">0090</span><span>B-G431B-ESC1 driver</span></div>
+          <div class="pl"><span class="ln">0100</span><span>Through-screws</span></div>
+          <div class="pl pl--muted">**** End of listing ****</div>
+        </div>
+        <div class="sprockets sprockets--right" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section container">
+    <header class="section-head">
+      <span class="sec-num">§ 04</span>
+      <h2>Bill of materials</h2>
+      <span class="page-num">— 04 / 06 —</span>
+    </header>
+    <div class="section-intro">
+      <p class="body-lg">Berkeley’s published cost per actuator, in US dollars. The 6512 is the larger of their two sizes. Our own parts list will replace this once our design is settled.</p>
+      <span class="meta">Source: Berkeley Humanoid Lite paper</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Item</th><th class="r">6512 actuator</th><th class="r">5010 actuator</th></tr></thead>
+        <tbody>
+          <tr><td>Brushless motor (drone type)</td><td class="r">$129</td><td class="r">$84</td></tr>
+          <tr><td>B-G431B-ESC1 driver</td><td class="r">$19</td><td class="r">$19</td></tr>
+          <tr><td>AS5600 position encoder</td><td class="r">$3</td><td class="r">$3</td></tr>
+          <tr><td>Bearings</td><td class="r">$23</td><td class="r">$18</td></tr>
+          <tr><td>Fasteners</td><td class="r">$5</td><td class="r">$4</td></tr>
+          <tr><td>3D-printed parts</td><td class="r">$4</td><td class="r">$3</td></tr>
+          <tr><td>Cables and connectors</td><td class="r">$5</td><td class="r">$5</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="r">$188</td><td class="r">$136</td></tr></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ § 05 — Build steps ============ -->
+  <section class="section container" id="steps">
+    <header class="section-head">
+      <span class="sec-num">§ 05</span>
+      <h2>Build steps</h2>
+      <span class="page-num">— 05 / 06 —</span>
+    </header>
+    <ol class="steps">
+      <li><div><h3>Print the parts</h3><p>Print the housing, cycloidal disc, input shaft and output shaft in PLA on a desktop FDM printer. Berkeley sized every part to fit a 200 × 200 × 200 mm build volume. Our own tested print settings will be added here.</p></div></li>
+      <li><div><h3>Embed the brass standoff</h3><p>A brass hex standoff is pressed into the input shaft. It stiffens the shaft and carries torque from the motor to the cycloidal discs.</p></div></li>
+      <li><div><h3>Fit the bearings</h3><p>Press the bearings into the housing and output shaft. The 6512 design is sized around the common 6811ZZ ball bearing.</p></div></li>
+      <li><div><h3>Assemble the cycloidal stage</h3><p>Stack the cycloidal disc on the eccentric input shaft and seat it against the pins in the housing. It should turn smoothly by hand before the motor goes on.</p></div></li>
+      <li><div><h3>Mount the motor and encoder</h3><p>Fix the motor to the input shaft, then mount the AS5600 magnetic encoder and its magnet as shown in the CAD.</p></div></li>
+      <li><div><h3>Clamp with through-screws</h3><p>Long through-screws pull the layers together so the printed parts aren’t relying on layer adhesion alone.</p></div></li>
+      <li><div><h3>Wire the driver</h3><p>Connect motor phases, encoder, power and CAN to the B-G431B-ESC1. Each CAN bus runs at 1 Mbps and Berkeley’s design supports up to 64 devices on one bus, so give every joint its own ID.</p></div></li>
+      <li><div><h3>Calibrate and test</h3><p>Set the zero position, then check smooth rotation, torque response and backlash before the actuator goes into the robot. Test on a bench power supply, not the battery.</p></div></li>
+    </ol>
+    <p class="note">Safety: motors can pinch fingers and LiPo batteries can start fires if shorted or damaged. Keep clear of moving parts, use a bench supply while testing, and never leave a charging battery unattended.</p>
+  </section>
+
+  <!-- ============ § 06 — Performance + sizing ============ -->
+  <section class="section container">
+    <div class="split">
+      <div class="split-copy">
+        <span class="sec-num">§ 06</span>
+        <h2>What to expect</h2>
+        <p class="body-lg">These are Berkeley’s results for the 6512 actuator, not ours. We’ll publish our own measurements once our actuators are built. Berkeley noted that heat in long runs hasn’t been studied properly yet, which matters for a printed structure.</p>
+        <dl class="specs">
+          <div><dt>Gearbox efficiency</dt><dd>about 90% in most conditions</dd></div>
+          <div><dt>Transmission stiffness</dt><dd>about 319 N·m/rad</dd></div>
+          <div><dt>Backlash, new units</dt><dd>up to 0.0229 rad</dd></div>
+          <div><dt>Durability test</dt><dd>60 hours, no failure</dd></div>
+        </dl>
+        <div class="sources">
+          <a class="link-arrow" href="https://arxiv.org/abs/2504.17249">Berkeley Humanoid Lite paper <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+          <a class="link-arrow" href="https://lite.berkeley-humanoid.org">Berkeley design files <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        </div>
+      </div>
+      <div class="split-copy">
+        <h2>Sizing for the G1</h2>
+        <p class="body-lg">The G1’s torque limits fall into five tiers. Berkeley’s printed actuators come in two sizes, and the paper doesn’t give their peak torque, so check their repository before committing a joint to one. The hips and knees are the hard part: the G1’s knee limit is well above the 81.1 N·m peak of the largest original Berkeley Humanoid actuator.</p>
+        <dl class="specs">
+          <div><dt>±139 N·m — 2 joints</dt><dd>knee × 2</dd></div>
+          <div><dt>±88 N·m — 7 joints</dt><dd>hip pitch × 2, hip roll × 2, hip yaw × 2, waist yaw × 1</dd></div>
+          <div><dt>±50 N·m — 6 joints</dt><dd>ankle pitch × 2, ankle roll × 2, waist roll × 1, waist pitch × 1</dd></div>
+          <div><dt>±25 N·m — 10 joints</dt><dd>shoulder pitch × 2, shoulder roll × 2, shoulder yaw × 2, elbow × 2, wrist roll × 2</dd></div>
+          <div><dt>±5 N·m — 4 joints</dt><dd>wrist pitch × 2, wrist yaw × 2</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ Footer ============ -->
+<footer class="site-footer container">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="brand">
+        <svg class="brand-mark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="s-ink" cx="20" cy="20" r="18.5" fill="none" stroke-width="1"/>
+        <path class="s-acc" d="M20 1V39M1 20H39" fill="none" stroke-width="0.6" stroke-dasharray="4 1.5 1 1.5"/>
+        <path class="s-ink" data-art="logo" fill="none" stroke-width="1.3"/>
+      </svg>
+        <span class="brand-name">Vitruvian</span>
+      </div>
+      <p>An open-source, 3D-printable humanoid robot based on the Unitree G1. Not affiliated with Unitree.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Project">
+      <h3>Project</h3>
+      <ul>
+        <li><a href="index.html#robot">The robot</a></li>
+        <li><a href="index.html#status">Roadmap</a></li>
+        <li><a href="index.html#follow">Updates</a></li>
+        <li><a href="#">FAQ</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="Learn">
+      <h3>Learn</h3>
+      <ul>
+        <li><a href="development.html">Development log</a></li>
+        <li><a href="guides.html">Build guides</a></li>
+        <li><a href="#">Bill of materials</a></li>
+        <li><a href="#">Safety</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="Community">
+      <h3>Community</h3>
+      <ul>
+        <li><a href="team.html">Team</a></li>
+        <li><a href="team.html#collaborators">Collaborators</a></li>
+        <li><a href="#">Source code</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <dl class="title-block title-block--footer">
+    <div class="wide"><dt>Project</dt><dd class="caps">Vitruvian humanoid</dd></div>
+    <div><dt>Sheet</dt><dd>001-A</dd></div>
+    <div><dt>Size</dt><dd>A2</dd></div>
+    <div><dt>Scale</dt><dd>1 : 1</dd></div>
+    <div><dt>Date</dt><dd>24.10.26</dd></div>
+    <div><dt>Rev</dt><dd class="accent">R0</dd></div>
+  </dl>
+
+  <div class="footer-bottom">
+    <span>© Vitruvian project contributors</span>
+    <div class="scale" aria-hidden="true">
+      <div class="scale-bar"><span></span><span></span><span></span><span></span></div>
+      <div class="scale-labels"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span></div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
