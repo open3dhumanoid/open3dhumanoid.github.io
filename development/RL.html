@@ -457,7 +457,7 @@
       <div><dt>Pose error, 12 keypoints</dt><dd><span data-stat="kp_first">8.8</span> → <span data-stat="kp_end">5.6</span> cm</dd></div>
     </dl>
 
-    <figure class="art-fig art-progress" id="fig-4" data-progress-csv="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/assets/progress.csv">
+    <figure class="art-fig art-progress" id="fig-4" data-progress-csv="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/logs/pose_stage1T1/progress.csv">
       <div class="art-fig-head"><span>Fig. 4 — stage 1, read from progress.csv</span><span><span data-stat="steps_M">60</span>M steps · <span data-stat="tests">21</span> tests</span></div>
       <div class="art-fig-body" data-progress>
         <p class="art-status" data-role="status" role="status">Loading the training log…</p>
@@ -482,7 +482,7 @@
         <div class="art-tip" role="presentation"></div>
       </div>
       <figcaption>Top: every 5 % of the run the policy replays the same 8 test episodes (2 per motion kind, up to 10 s each); shading is the time before that kind joined training. Below: statistics from training itself, smoothed over about 1 % of the run, with lines where one-leg balance and stepping joined. Training numbers depend on which motions were being practised at the time; the tests don’t.</figcaption>
-      <p class="art-source"><span data-role="source">Data: <a href="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/assets/progress.csv">progress.csv</a> in the pose-to-biped repository’s <code>assets</code> folder.</span> <label class="art-load">Plot another progress.csv<input type="file" accept=".csv,text/csv" data-role="file"></label></p>
+      <p class="art-source"><span data-role="source">Data: <a href="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/logs/pose_stage1T1/progress.csv"><code>logs/pose_stage1T1/progress.csv</code></a> in the pose-to-biped repository, loaded when you scroll here.</span> <label class="art-load">Plot another progress.csv<input type="file" accept=".csv,text/csv" data-role="file"></label></p>
       <details class="art-details">
         <summary>Show the numbers</summary>
         <div class="table-wrap">
@@ -710,7 +710,7 @@ mujoco.mj_setConst(m, d)</code></pre>
           <tr><td>Armature = rotor inertia × gear ratio²</td><td><a href="https://humanoid.guide/?p=19933">Humanoid.guide on gear ratios</a></td><td>published</td></tr>
           <tr><td>Joint PD gains (ankle 40 N·m/rad)</td><td><a href="https://github.com/unitreerobotics/unitree_rl_gym/blob/276801e46c5d433564f24658bac64f254b7d2d4b/deploy/deploy_mujoco/configs/g1.yaml">Unitree RL Gym G1 deploy config</a></td><td>published</td></tr>
           <tr><td>Reward weights, curriculum, PPO settings</td><td>Our training code (<a href="https://github.com/shepai/pose-to-biped">pose-to-biped</a>)</td><td>our design</td></tr>
-          <tr><td>Stage 1 results, Fig. 4</td><td><a href="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/assets/progress.csv"><code>progress.csv</code></a> from our stage 1 run, loaded and plotted by this page</td><td>measured in training</td></tr>
+          <tr><td>Stage 1 results, Fig. 4</td><td><a href="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/logs/pose_stage1T1/progress.csv"><code>progress.csv</code></a> from our stage 1 run, loaded and plotted by this page</td><td>measured in training</td></tr>
           <tr class="muted"><td>OpenG1 printed masses, actuator masses and armature</td><td>Not measured yet</td><td>to come</td></tr>
         </tbody>
       </table>
