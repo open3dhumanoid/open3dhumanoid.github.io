@@ -3,15 +3,94 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Actuator build guide — OpenG1</title>
-  <meta name="description" content="How the OpenG1 humanoid’s joint actuators are built, with a joint map and torque table for the Unitree G1.">
+  <title>Learning to balance — OpenG1</title>
+  <meta name="description" content="How we use reinforcement learning in simulation to make the OpenG1 humanoid copy a person’s pose without falling over, and how 3D-print infill changes the mass the controller has to handle.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech&amp;family=Share+Tech+Mono&amp;display=swap">
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="../pages.css">
   <script src="script.js" defer></script>
-  <script src="motor.js" defer></script>
+  <style>
+    /* ---------- article components (only used on this page) ---------- */
+    .art-prose { max-width: 70ch; display: flex; flex-direction: column; gap: 18px; margin-top: 28px; }
+    .art-prose p, .art-prose li { margin: 0; font-family: var(--sans); font-size: 18px; line-height: 1.6; color: var(--muted-dark); }
+    .art-prose ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+    .art-prose h3 { margin: 16px 0 0; font-weight: 400; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); }
+    .art-prose em { font-style: normal; color: var(--ink); }
+    .art-prose code, .art-inline-code { font-family: var(--mono); font-size: 0.88em; padding: 0 4px; background: var(--panel); border: 1px solid var(--rule-soft); }
+
+    .art-specs { max-width: 760px; margin-top: 36px; }
+
+    .art-fig { margin: 40px 0 0; border: 1px solid var(--ink); background: var(--panel); }
+    .art-fig-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; padding: 10px 14px; border-bottom: 1px solid var(--ink); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+    .art-fig-head span:last-child { color: var(--muted); }
+    .art-fig-body { position: relative; padding: 20px clamp(12px, 3vw, 28px) 24px; }
+    .art-fig figcaption { padding: 12px 14px; border-top: 1px solid var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; color: var(--muted); }
+
+    .art-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0 0 18px; padding: 0; list-style: none; font-size: 13px; letter-spacing: 0.06em; color: var(--ink); }
+    .art-legend li { display: flex; align-items: center; gap: 8px; }
+    .art-key { flex: none; width: 14px; height: 14px; border-radius: 3px; }
+    .art-key--line { width: 20px; height: 2px; border-radius: 1px; }
+
+    /* series colours: vermilion and cobalt are the site's pens, teal is the third (checked for colour-blind separation) */
+    .art-f-alive, .art-k-alive { background: #1f8a7a; }
+    .art-f-balance, .art-k-balance { background: #b5391a; }
+    .art-f-tracking, .art-k-tracking { background: #2f4f9f; }
+    .art-k-cp { background: #b5391a; } .art-k-up { background: #1f8a7a; } .art-k-kp { background: #2f4f9f; }
+
+    .art-segrows { display: flex; flex-direction: column; gap: 14px; }
+    .art-segrow { display: grid; grid-template-columns: minmax(96px, 150px) minmax(0, 1fr); gap: 8px 16px; align-items: center; }
+    .art-rowlab { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .art-segbar { display: flex; gap: 2px; height: 28px; min-width: 0; }
+    .art-seg { min-width: 0; display: flex; align-items: center; padding-left: 8px; border-radius: 4px; color: #fff; font-size: 13px; white-space: nowrap; overflow: hidden; cursor: default; }
+    .art-seg:hover, .art-seg:focus-visible { filter: brightness(1.12); }
+
+    .art-panels { display: flex; flex-wrap: wrap; gap: 28px; }
+    .art-panel { flex: 1 1 320px; min-width: 0; position: relative; }
+    .art-panel h4 { margin: 0 0 8px; font-weight: 400; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .art-chart { display: block; width: 100%; height: auto; overflow: visible; }
+    .art-chart text { font-family: var(--mono); font-size: 12.5px; fill: var(--muted); }
+    .art-chart .art-annot { fill: var(--ink); font-size: 13px; }
+    .art-grid line { stroke: rgba(30, 28, 23, 0.12); stroke-width: 1; }
+    .art-axis .art-base { stroke: rgba(30, 28, 23, 0.45); stroke-width: 1; }
+    .art-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .art-s-cp { stroke: #b5391a; } .art-s-up { stroke: #1f8a7a; } .art-s-kp { stroke: #2f4f9f; }
+    .art-dot { stroke: var(--panel); stroke-width: 2; }
+    .art-dot.art-s-cp { fill: #b5391a; } .art-dot.art-s-kp { fill: #2f4f9f; }
+    .art-cross line { stroke: var(--ink); stroke-width: 1; opacity: 0; }
+    .art-cross.on line { opacity: 0.5; }
+    .art-hit { cursor: crosshair; }
+
+    .art-tip { position: absolute; z-index: 2; pointer-events: none; min-width: 150px; padding: 8px 10px; background: var(--ink); color: var(--card); font-size: 12px; line-height: 1.5; letter-spacing: 0.04em; opacity: 0; transition: opacity 0.1s; }
+    .art-tip.on { opacity: 1; }
+    .art-tip .row { display: flex; align-items: center; gap: 8px; }
+    .art-tip .row i { flex: none; width: 12px; height: 2px; }
+    .art-tip b { font-weight: 400; color: #fff; }
+    .art-tip .lab { color: #c9bf9f; }
+
+    .art-details summary { display: flex; align-items: center; min-height: 44px; padding: 0 14px; border-top: 1px solid var(--rule-soft); cursor: pointer; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; }
+    .art-details .table-wrap { margin: 0 14px 14px; }
+
+    .art-callout { max-width: 70ch; margin-top: 32px; padding: 16px 20px; border-left: 3px solid var(--accent); background: rgba(246, 240, 220, 0.7); font-family: var(--sans); font-size: 18px; line-height: 1.55; color: var(--ink); }
+    .art-callout span { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+
+    .art-formula { max-width: 70ch; margin-top: 28px; padding: 16px 20px; border: 1px solid var(--ink); background: var(--panel); font-size: clamp(14px, 1.6vw, 18px); line-height: 1.7; letter-spacing: 0.02em; overflow-x: auto; }
+    .art-formula small { display: block; font-family: var(--sans); font-size: 15px; letter-spacing: 0; color: var(--muted); }
+
+    .art-code { max-width: 860px; margin: 28px 0 0; padding: 18px 20px; overflow-x: auto; background: var(--ink); color: var(--card); font-family: var(--mono); font-size: 14px; line-height: 1.65; }
+    .art-code .c { color: #b9ae8c; }
+    .art-code-head { max-width: 860px; margin-top: 28px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 8px 14px; border: 1px solid var(--ink); border-bottom: 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+    .art-code-head + .art-code { margin-top: 0; }
+
+    .art-gif { display: block; width: 100%; max-width: 720px; height: auto; margin-inline: auto; border: 1px solid var(--rule-soft); background: var(--paper); }
+    .data-table a, .art-formula a, .meta a { text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    .data-table code, .meta code { font-family: var(--mono); font-size: 0.92em; }
+
+    .printout--code .print-body { text-transform: none; }
+    .art-two { display: flex; flex-wrap: wrap; gap: 32px 48px; margin-top: 8px; }
+    .art-two > * { flex: 1 1 340px; min-width: 0; }
+  </style>
 </head>
 <body>
 
@@ -30,149 +109,54 @@
     </a>
     <div class="nav-links">
       <a href="https://open3dhumanoid.github.io/index.html#robot"><span class="num">01</span>Robot</a>
-      <a href="https://open3dhumanoid.github.io/development.html"><span class="num">02</span>Development</a>
-      <a href="https://open3dhumanoid.github.io/guides.html" aria-current="page"><span class="num">03</span>Build guides</a>
+      <a href="https://open3dhumanoid.github.io/development.html" aria-current="page"><span class="num">02</span>Development</a>
+      <a href="https://open3dhumanoid.github.io/guides.html"><span class="num">03</span>Build guides</a>
       <a href="https://open3dhumanoid.github.io/team.html"><span class="num">04</span>Team</a>
     </div>
-    <a class="btn btn--solid btn--sm" href="index.html#follow">Follow the project</a>
+    <a class="btn btn--solid btn--sm" href="https://open3dhumanoid.github.io/index.html#follow">Follow the project</a>
   </nav>
 </header>
 
 <main>
   <section class="page-intro container">
-    <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Build guide G.01 — actuators · status: draft</p>
-    <h1 class="page-title">Building the actuator</h1>
-    <p class="lede">Every joint is driven by the same kind of unit: a brushless motor, a 3D-printed cycloidal reducer, a magnetic encoder and a small driver on a CAN bus. This guide follows the Berkeley Humanoid Lite design and maps it onto the Unitree G1’s 29 joints.</p>
+    <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Development article D.01 — control · status: training in progress</p>
+    <h1 class="page-title">Learning to balance</h1>
+    <p class="lede">Before the printed robot stands up, a simulated one has to. This article explains how we use reinforcement learning to make a simulated G1 copy a person’s pose without falling over, what went wrong first, and how the same simulation can help us choose 3D-print infill for every part.</p>
+    <dl class="specs art-specs">
+      <div><dt>Simulator</dt><dd>MuJoCo 3</dd></div>
+      <div><dt>Robot model</dt><dd>Unitree G1, 29 joints (23 driven by the policy)</dd></div>
+      <div><dt>Learning method</dt><dd>PPO, Stable-Baselines3</dd></div>
+      <div><dt>Control rate</dt><dd>policy 50 Hz · joint PD loop 500 Hz</dd></div>
+      <div><dt>Training</dt><dd>60M steps, then 40M with pushes and noise</dd></div>
+    </dl>
   </section>
 
-  <!-- ============ § 01 — Diagram ============ -->
+  <!-- ============ § 01 ============ -->
   <section class="section container">
     <header class="section-head">
       <span class="sec-num">§ 01</span>
-      <h2>Which joint is which</h2>
-      <span class="page-num">— 01 / 06 —</span>
+      <h2>Why learn it in simulation</h2>
+      <span class="page-num">— 01 / 08 —</span>
     </header>
-    <div class="split">
-      <figure class="g1-fig">
-        <div class="g1-stage">
-          <!-- Replace this drawing with your G1 outline: <img src="img/g1-outline.svg" alt="Outline of the Unitree G1 with numbered joint locations">
-               then nudge each pin with its --x / --y values (percent of the picture). -->
-          <svg class="g1-art" viewBox="0 0 300 400" fill="none" aria-hidden="true">
-            <circle class="s-ink" cx="150" cy="42" r="22" stroke-width="1.2"/>
-            <path class="s-ink" d="M102 96H198L190 200H110Z M102 96L84 152L72 200 M198 96L216 152L228 200 M132 208L130 288L130 368 M168 208L170 288L170 368 M120 368H140 M160 368H180" stroke-width="1.2"/>
-            <path class="s-acc" d="M150 0V400M0 200H300" stroke-width=".5" stroke-dasharray="10 3 2 3" stroke-opacity=".6"/>
-          </svg>
-          <a class="pin" href="#ref-1" data-ref="1" style="--x:50%;--y:45%" aria-label="1: Waist">1</a>
-          <a class="pin" href="#ref-2" data-ref="2" style="--x:34%;--y:24%" aria-label="2: Shoulder">2</a>
-          <a class="pin" href="#ref-2" data-ref="2" style="--x:66%;--y:24%" aria-label="2: Shoulder">2</a>
-          <a class="pin" href="#ref-3" data-ref="3" style="--x:28%;--y:38%" aria-label="3: Elbow">3</a>
-          <a class="pin" href="#ref-3" data-ref="3" style="--x:72%;--y:38%" aria-label="3: Elbow">3</a>
-          <a class="pin" href="#ref-4" data-ref="4" style="--x:24%;--y:50%" aria-label="4: Wrist">4</a>
-          <a class="pin" href="#ref-4" data-ref="4" style="--x:76%;--y:50%" aria-label="4: Wrist">4</a>
-          <a class="pin" href="#ref-5" data-ref="5" style="--x:44%;--y:52%" aria-label="5: Hip">5</a>
-          <a class="pin" href="#ref-5" data-ref="5" style="--x:56%;--y:52%" aria-label="5: Hip">5</a>
-          <a class="pin" href="#ref-6" data-ref="6" style="--x:43%;--y:72%" aria-label="6: Knee">6</a>
-          <a class="pin" href="#ref-6" data-ref="6" style="--x:57%;--y:72%" aria-label="6: Knee">6</a>
-          <a class="pin" href="#ref-7" data-ref="7" style="--x:43%;--y:92%" aria-label="7: Ankle">7</a>
-          <a class="pin" href="#ref-7" data-ref="7" style="--x:57%;--y:92%" aria-label="7: Ankle">7</a>
+    <div class="split" style="margin-top:28px">
+      <div class="split-copy">
+        <div class="art-prose" style="margin-top:0">
+          <p>There is no neat formula for keeping a 29-joint humanoid upright while it reaches for something. Reinforcement learning (RL) side-steps the formula. A small neural network, the <em>policy</em>, looks at the robot fifty times a second and decides where every joint should move next. After each step a <em>reward</em> scores how well that went, and a learning algorithm (here PPO) nudges the network towards whatever earned more reward.</p>
+          <p>That needs millions of attempts and a lot of falling over, which is fine for a simulated robot and not for a printed one. So the learning happens in MuJoCo, a physics simulator, using a model of the Unitree G1. OpenG1 copies the G1’s proportions and joint layout, which is what lets this work carry over.</p>
+          <p>The task we chose is <em>pose copying</em>. Give the robot target positions for a person’s hands and feet, and optionally elbows, knees, hips and shoulders, and it has to put its own limbs there while staying balanced. Later those targets will come from a camera-based body tracker, which turns the robot into something you can drive by moving.</p>
         </div>
-        <figcaption><span>Fig. 2 — joint locations</span><span>front view</span></figcaption>
-        <p class="g1-note">Placeholder outline. Swap in your G1 drawing and move the pins to match.</p>
-      </figure>
-      <div class="split-copy">
-        <h2>Seven locations, 29 joints</h2>
-        <p class="body-lg">Each number on the diagram is a joint location, and the same number appears in the Ref column of the table below. Left and right sides share a number. Hover or focus a number to highlight its rows.</p>
-        <dl class="specs">
-          <div><dt>1 — Waist</dt><dd>3 joints: yaw, roll, pitch</dd></div>
-          <div><dt>2 — Shoulder</dt><dd>6 joints: pitch, roll, yaw × 2</dd></div>
-          <div><dt>3 — Elbow</dt><dd>2 joints</dd></div>
-          <div><dt>4 — Wrist</dt><dd>6 joints: roll, pitch, yaw × 2</dd></div>
-          <div><dt>5 — Hip</dt><dd>6 joints: pitch, roll, yaw × 2</dd></div>
-          <div><dt>6 — Knee</dt><dd>2 joints</dd></div>
-          <div><dt>7 — Ankle</dt><dd>4 joints: pitch, roll × 2</dd></div>
-        </dl>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ § 02 — Table ============ -->
-  <section class="section container" id="joint-data">
-    <header class="section-head">
-      <span class="sec-num">§ 02</span>
-      <h2>Joint data</h2>
-      <span class="page-num">— 02 / 06 —</span>
-    </header>
-    <div class="section-intro">
-      <p class="body-lg">Mass, range of motion and torque limit for each joint of the Unitree G1 (29-joint configuration). Range is in radians and torque is assumed to be in N·m. The mass looks like the link mass from the robot model, not the actuator alone, so the 9.598 kg at the waist pitch is the whole upper body.</p>
-      <span class="meta">29 joints + floating base</span>
-    </div>
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead><tr><th>Ref</th><th>Joint</th><th class="r">Mass (kg)</th><th>Range (rad)</th><th class="r">Torque (N·m)</th></tr></thead>
-        <tbody>
-        <tr class="muted"><td class="ref">—</td><td>floating_base_joint (free)</td><td class="r">3.813</td><td>unlimited</td><td class="r">—</td></tr>
-        <tr data-ref="5" id="ref-5"><td class="ref">5</td><td>left_hip_pitch_joint</td><td class="r">1.35</td><td>−2.5307 to 2.8798</td><td class="r">±88</td></tr>
-        <tr data-ref="5"><td class="ref">5</td><td>left_hip_roll_joint</td><td class="r">1.52</td><td>−0.5236 to 2.9671</td><td class="r">±88</td></tr>
-        <tr data-ref="5"><td class="ref">5</td><td>left_hip_yaw_joint</td><td class="r">1.702</td><td>−2.7576 to 2.7576</td><td class="r">±88</td></tr>
-        <tr data-ref="6" id="ref-6"><td class="ref">6</td><td>left_knee_joint</td><td class="r">1.932</td><td>−0.087267 to 2.8798</td><td class="r">±139</td></tr>
-        <tr data-ref="7" id="ref-7"><td class="ref">7</td><td>left_ankle_pitch_joint</td><td class="r">0.074</td><td>−0.87267 to 0.5236</td><td class="r">±50</td></tr>
-        <tr data-ref="7"><td class="ref">7</td><td>left_ankle_roll_joint</td><td class="r">0.608</td><td>−0.2618 to 0.2618</td><td class="r">±50</td></tr>
-        <tr data-ref="5"><td class="ref">5</td><td>right_hip_pitch_joint</td><td class="r">1.35</td><td>−2.5307 to 2.8798</td><td class="r">±88</td></tr>
-        <tr data-ref="5"><td class="ref">5</td><td>right_hip_roll_joint</td><td class="r">1.52</td><td>−2.9671 to 0.5236</td><td class="r">±88</td></tr>
-        <tr data-ref="5"><td class="ref">5</td><td>right_hip_yaw_joint</td><td class="r">1.702</td><td>−2.7576 to 2.7576</td><td class="r">±88</td></tr>
-        <tr data-ref="6"><td class="ref">6</td><td>right_knee_joint</td><td class="r">1.932</td><td>−0.087267 to 2.8798</td><td class="r">±139</td></tr>
-        <tr data-ref="7"><td class="ref">7</td><td>right_ankle_pitch_joint</td><td class="r">0.074</td><td>−0.87267 to 0.5236</td><td class="r">±50</td></tr>
-        <tr data-ref="7"><td class="ref">7</td><td>right_ankle_roll_joint</td><td class="r">0.608</td><td>−0.2618 to 0.2618</td><td class="r">±50</td></tr>
-        <tr data-ref="1" id="ref-1"><td class="ref">1</td><td>waist_yaw_joint</td><td class="r">0.244</td><td>−2.618 to 2.618</td><td class="r">±88</td></tr>
-        <tr data-ref="1"><td class="ref">1</td><td>waist_roll_joint</td><td class="r">0.047</td><td>−0.52 to 0.52</td><td class="r">±50</td></tr>
-        <tr data-ref="1"><td class="ref">1</td><td>waist_pitch_joint</td><td class="r">9.598</td><td>−0.52 to 0.52</td><td class="r">±50</td></tr>
-        <tr data-ref="2" id="ref-2"><td class="ref">2</td><td>left_shoulder_pitch_joint</td><td class="r">0.718</td><td>−3.0892 to 2.6704</td><td class="r">±25</td></tr>
-        <tr data-ref="2"><td class="ref">2</td><td>left_shoulder_roll_joint</td><td class="r">0.643</td><td>−1.5882 to 2.2515</td><td class="r">±25</td></tr>
-        <tr data-ref="2"><td class="ref">2</td><td>left_shoulder_yaw_joint</td><td class="r">0.734</td><td>−2.618 to 2.618</td><td class="r">±25</td></tr>
-        <tr data-ref="3" id="ref-3"><td class="ref">3</td><td>left_elbow_joint</td><td class="r">0.6</td><td>−1.0472 to 2.0944</td><td class="r">±25</td></tr>
-        <tr data-ref="4" id="ref-4"><td class="ref">4</td><td>left_wrist_roll_joint</td><td class="r">0.085445</td><td>−1.97222 to 1.97222</td><td class="r">±25</td></tr>
-        <tr data-ref="4"><td class="ref">4</td><td>left_wrist_pitch_joint</td><td class="r">0.48405</td><td>−1.61443 to 1.61443</td><td class="r">±5</td></tr>
-        <tr data-ref="4"><td class="ref">4</td><td>left_wrist_yaw_joint</td><td class="r">0.254576</td><td>−1.61443 to 1.61443</td><td class="r">±5</td></tr>
-        <tr data-ref="2"><td class="ref">2</td><td>right_shoulder_pitch_joint</td><td class="r">0.718</td><td>−3.0892 to 2.6704</td><td class="r">±25</td></tr>
-        <tr data-ref="2"><td class="ref">2</td><td>right_shoulder_roll_joint</td><td class="r">0.643</td><td>−2.2515 to 1.5882</td><td class="r">±25</td></tr>
-        <tr data-ref="2"><td class="ref">2</td><td>right_shoulder_yaw_joint</td><td class="r">0.734</td><td>−2.618 to 2.618</td><td class="r">±25</td></tr>
-        <tr data-ref="3"><td class="ref">3</td><td>right_elbow_joint</td><td class="r">0.6</td><td>−1.0472 to 2.0944</td><td class="r">±25</td></tr>
-        <tr data-ref="4"><td class="ref">4</td><td>right_wrist_roll_joint</td><td class="r">0.085445</td><td>−1.97222 to 1.97222</td><td class="r">±25</td></tr>
-        <tr data-ref="4"><td class="ref">4</td><td>right_wrist_pitch_joint</td><td class="r">0.48405</td><td>−1.61443 to 1.61443</td><td class="r">±5</td></tr>
-        <tr data-ref="4"><td class="ref">4</td><td>right_wrist_yaw_joint</td><td class="r">0.254576</td><td>−1.61443 to 1.61443</td><td class="r">±5</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- ============ § 03 — Inside the actuator ============ -->
-  <section class="section section--wide container">
-    <div class="split">
-      <div class="split-copy">
-        <span class="sec-num">§ 03</span>
-        <h2>What’s inside</h2>
-        <p class="body-lg">The motor is a standard brushless drone motor. Its output goes into a 3D-printed cycloidal reducer, which spreads the load over many teeth and copes better with a desktop printer’s limited accuracy than planetary gears do. The original Berkeley Humanoid used 9:1 planetary actuators; the printable Lite version swaps in the cycloidal design, and that is the one we follow.</p>
-        <dl class="specs">
-          <div><dt>Material</dt><dd>PLA, FDM printed</dd></div>
-          <div><dt>Largest part</dt><dd>fits 200 × 200 × 200 mm</dd></div>
-          <div><dt>Communication</dt><dd>CAN, 1 Mbps</dd></div>
-          <div><dt>Berkeley sizes</dt><dd>6512 and 5010</dd></div>
-        </dl>
       </div>
       <div class="printout">
         <div class="sprockets" aria-hidden="true"></div>
         <div class="print-body">
-          <div class="pl pl--muted">**** Parts ****</div>
-          <div class="pl"><span class="ln">0010</span><span>Housing (printed)</span></div>
-          <div class="pl"><span class="ln">0020</span><span>Cycloidal disc (printed)</span></div>
-          <div class="pl"><span class="ln">0030</span><span>Input shaft (printed)</span></div>
-          <div class="pl"><span class="ln">0040</span><span>Brass hex standoff</span></div>
-          <div class="pl"><span class="ln">0050</span><span>Output shaft (printed)</span></div>
-          <div class="pl"><span class="ln">0060</span><span>Bearings</span></div>
-          <div class="pl"><span class="ln">0070</span><span>BLDC drone motor</span></div>
-          <div class="pl"><span class="ln">0080</span><span>AS5600 encoder + magnet</span></div>
-          <div class="pl"><span class="ln">0090</span><span>B-G431B-ESC1 driver</span></div>
-          <div class="pl"><span class="ln">0100</span><span>Through-screws</span></div>
+          <div class="pl pl--muted">**** Control loop, every 20 ms ****</div>
+          <div class="pl"><span class="ln">0010</span><span>Read IMU, joint angles, joint speeds</span></div>
+          <div class="pl"><span class="ln">0020</span><span>Read targets: hands, feet, elbows, knees</span></div>
+          <div class="pl"><span class="ln">0030</span><span>Policy network -> joint corrections</span></div>
+          <div class="pl"><span class="ln">0040</span><span>PD loop at 500 Hz -> motor torques</span></div>
+          <div class="pl"><span class="ln">0050</span><span>Physics step x10</span></div>
+          <div class="pl"><span class="ln">0060</span><span>Score the step (reward)</span></div>
+          <div class="pl"><span class="ln">0070</span><span>Fallen? -> end episode, start again</span></div>
           <div class="pl pl--muted">**** End of listing ****</div>
         </div>
         <div class="sprockets sprockets--right" aria-hidden="true"></div>
@@ -180,81 +164,480 @@
     </div>
   </section>
 
+  <!-- ============ § 02 ============ -->
   <section class="section container">
     <header class="section-head">
-      <span class="sec-num">§ 04</span>
-      <h2>Bill of materials</h2>
-      <span class="page-num">— 04 / 06 —</span>
+      <span class="sec-num">§ 02</span>
+      <h2>First attempt: borrowed legs</h2>
+      <span class="page-num">— 02 / 08 —</span>
+    </header>
+    <div class="art-prose">
+      <p>Unitree publishes a pretrained walking policy for the G1. Our first plan was to let it run the legs, holding the robot still, and train a second policy for the waist and arms to reach the hand targets.</p>
+      <p>It never learned. The run’s <code>progress.csv</code> shows episodes ending after about 45 of their 500 steps for the whole 1.5 million steps, so the robot fell within a second every time. The reward curve was noisy because it mostly measured <em>when</em> the robot fell: each fall cost −10, against about +0.5 per step it stayed up (the average in that run).</p>
+      <p>The cause was not in the learning at all. Running the walking policy on its own, with no arm movement, showed it couldn’t keep the 29-joint robot standing either:</p>
+    </div>
+    <div class="table-wrap" style="margin-top:28px">
+      <table class="data-table">
+        <thead><tr><th>Setup</th><th class="r">Stays up for</th></tr></thead>
+        <tbody>
+          <tr><td>12-joint G1 model (what the walking policy was trained on)</td><td class="r">10 s (full episode)</td></tr>
+          <tr><td>29-joint G1 model, arms perfectly still</td><td class="r">1.6 s</td></tr>
+          <tr><td>29-joint model, arms exploring randomly (our training)</td><td class="r">0.4 – 1.3 s</td></tr>
+          <tr><td>29-joint model with joint armature restored</td><td class="r">10 s, even with random arm motion</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="art-prose">
+      <p>Unitree’s 29-joint model file (<code>g1_29dof.xml</code>) sets no <em>armature</em> on any joint, while the <a href="https://github.com/unitreerobotics/unitree_rl_gym/blob/276801e46c5d433564f24658bac64f254b7d2d4b/resources/robots/g1_description/g1_12dof.xml">12-joint model</a> the walking policy learned on uses 0.01 kg·m². Armature is the motor’s rotor inertia as felt at the joint: the rotor inertia multiplied by the gear ratio squared (<a href="https://humanoid.guide/?p=19933">explained here</a>). It is small, but a gearbox makes it matter, and a PD loop tuned with it behaves very differently without it. Setting the 12-joint model’s 0.01 kg·m² on every joint fixed standing outright. Our environment now uses per-motor values from <a href="https://github.com/HybridRobotics/whole_body_tracking/blob/9db915838b17785c6fec90c91fe80b95b147e1bd/source/whole_body_tracking/whole_body_tracking/robots/g1.py">BeyondMimic’s G1 config</a>, between 0.0036 and 0.025 kg·m², which also stand for the full 10 s.</p>
+    </div>
+    <p class="art-callout"><span>Lesson</span>A reward can’t fix a simulation that is wrong about the hardware. When OpenG1’s printed cycloidal actuators exist, their armature (rotor inertia × ratio²) and every link’s mass have to go into the model before a policy trained on it can work on the real robot. § 06 is about the mass part.</p>
+  </section>
+
+  <!-- ============ § 03 ============ -->
+  <section class="section container" id="pose-tracking">
+    <header class="section-head">
+      <span class="sec-num">§ 03</span>
+      <h2>One policy, whole body</h2>
+      <span class="page-num">— 03 / 08 —</span>
     </header>
     <div class="section-intro">
-      <p class="body-lg">Berkeley’s published cost per actuator, in US dollars. The 6512 is the larger of their two sizes. Our own parts list will replace this once our design is settled.</p>
-      <span class="meta">Source: Berkeley Humanoid Lite paper</span>
+      <p class="body-lg">Even standing, a frozen walking policy can’t hold a foot where you ask; it only knows how to step. So we replaced it with a single policy that drives all 23 joints of the legs, waist and arms (wrists are held still for now). It follows the recipe used in published motion-imitation work such as DeepMimic and H2O, scaled down to train on one workstation.</p>
+      <span class="meta">23 joints · 50 Hz</span>
+    </div>
+    <ol class="steps">
+      <li><div><h3>Make reference motions</h3><p>The policy needs lots of poses that are physically possible. A generator builds them with whole-body inverse kinematics, keeping the centre of mass over the feet that are on the ground, checking that limbs don’t collide and limiting joint speed to 3 rad/s. The library has 120 clips, 43 minutes in all, in four kinds: arm and waist moves, squats and leans with both feet planted, balancing on one leg, and stepping.</p></div></li>
+      <li><div><h3>Start in the middle</h3><p>Every episode starts at a random moment of a random clip, with the robot placed exactly in that pose. Hard moments get practised as often as easy ones.</p></div></li>
+      <li><div><h3>Learn corrections, not poses</h3><p>The policy’s output is a small correction added to the reference joint angles. On top of that, a gravity feed-forward term adds the torque needed to hold the reference pose up, computed from the model. Without it the untrained robot sags by 4.7 cm of pose error in the first 0.2 s; with it, 1.4 cm.</p></div></li>
+      <li><div><h3>Stop early</h3><p>An episode ends when the robot falls (pelvis tilted past 45° or 25 cm too low) or drifts too far from the pose (mean error over 30 cm). No time is wasted flailing on the floor.</p></div></li>
+      <li><div><h3>Score each step</h3><p>The reward is between roughly 0 and 1 per step, with no big fall penalty. Ending early is the penalty: the robot loses every reward it would have earned.</p></div></li>
+    </ol>
+    <div class="art-prose">
+      <h3>From a body tracker to joint angles</h3>
+      <p>A tracker gives positions, not joint angles. A retargeting step solves inverse kinematics on the G1 model to turn tracker points into a full robot pose in about 2 ms per frame. With 12 points it reproduces them to within a few millimetres. With only hands and feet it still hits those four, but has to guess the elbows and knees (about 8 cm off on average), which is why we’ll use more tracker points when we can.</p>
+    </div>
+  </section>
+
+  <!-- ============ § 04 ============ -->
+  <section class="section container" id="balance-first">
+    <header class="section-head">
+      <span class="sec-num">§ 04</span>
+      <h2>It tracked, then it fell</h2>
+      <span class="page-num">— 04 / 08 —</span>
+    </header>
+    <div class="art-prose">
+      <p>The first whole-body training run did learn to match poses, and the reward rose. Then it fell again: the robot copied the pose well and tipped over later in the episode. Three things were behind it:</p>
+      <ul>
+        <li>three quarters of the reward was pose accuracy, so the policy happily traded balance for accuracy;</li>
+        <li>the balance terms (pelvis height and tilt) only reacted once a fall was already under way;</li>
+        <li>PPO was set to care about roughly the next 2 seconds, so a slow drift towards a fall cost almost nothing at the moment it started.</li>
+      </ul>
+      <p>Balance matters more than exact accuracy: a robot on the floor copies nothing. So we rebuilt the reward around it.</p>
+    </div>
+
+    <figure class="art-fig" id="fig-1">
+      <div class="art-fig-head"><span>Fig. 1 — what the reward pays for</span><span>share of each step’s reward</span></div>
+      <div class="art-fig-body" data-tipzone>
+        <ul class="art-legend" aria-hidden="true">
+          <li><span class="art-key art-k-alive"></span>Staying up</li>
+          <li><span class="art-key art-k-balance"></span>Balance</li>
+          <li><span class="art-key art-k-tracking"></span>Pose accuracy</li>
+        </ul>
+        <div class="art-segrows">
+<div class="art-segrow"><span class="art-rowlab">First version</span><div class="art-segbar"><span class="art-seg art-f-alive" style="flex:5 1 0" tabindex="0" data-name="Staying up" data-value="5% of the reward" aria-label="First version: Staying up 5%"></span><span class="art-seg art-f-balance" style="flex:20 1 0" tabindex="0" data-name="Balance" data-value="20% of the reward" aria-label="First version: Balance 20%">20%</span><span class="art-seg art-f-tracking" style="flex:75 1 0" tabindex="0" data-name="Pose accuracy" data-value="75% of the reward" aria-label="First version: Pose accuracy 75%">75%</span></div></div>
+<div class="art-segrow"><span class="art-rowlab">Balance-first</span><div class="art-segbar"><span class="art-seg art-f-alive" style="flex:20 1 0" tabindex="0" data-name="Staying up" data-value="20% of the reward" aria-label="Balance-first: Staying up 20%">20%</span><span class="art-seg art-f-balance" style="flex:40 1 0" tabindex="0" data-name="Balance" data-value="40% of the reward" aria-label="Balance-first: Balance 40%">40%</span><span class="art-seg art-f-tracking" style="flex:40 1 0" tabindex="0" data-name="Pose accuracy" data-value="40% of the reward" aria-label="Balance-first: Pose accuracy 40%">40%</span></div></div>
+        </div>
+        <div class="art-tip" role="presentation"></div>
+      </div>
+      <figcaption>Balance-first: staying up 20 %; balance 40 % (capture point 15, pelvis tilt 10, height 5, wobble 5, foot contacts 5); pose accuracy 40 % (keypoints 20, joint angles 12, joint speeds 8). Small penalties for jerky actions, high torque and sliding feet come off the total.</figcaption>
+    </figure>
+
+    <div class="art-prose">
+      <h3>Seeing a fall coming</h3>
+      <p>The most useful new term is the <em>capture point</em>. Take the robot’s centre of mass, and add its horizontal speed divided by ω = √(g / h), where h is the height of the centre of mass. That is where the robot would have to put a foot to come to a stop. If it lies inside the area covered by the feet on the ground (the support polygon), the robot can recover without stepping. If it lies outside, a fall has already started, even though nothing looks wrong yet. We work out the support polygon from the four contact points under each sole, and the reward pays full marks while the capture point stays at least 2 cm inside it.</p>
+      <p>To check it really warns early, we let the untrained robot fall 118 times and lined the falls up by the moment each one ended:</p>
+    </div>
+
+    <figure class="art-fig" id="fig-2">
+      <div class="art-fig-head"><span>Fig. 2 — the last 1.2 s before a fall</span><span>median of 118 falls</span></div>
+      <div class="art-fig-body">
+        <div class="art-panels" data-ew>
+          <div class="art-panel">
+            <h4>Balance scores (0 to 1)</h4>
+            <ul class="art-legend">
+              <li><span class="art-key art-key--line art-k-cp"></span>Capture point</li>
+              <li><span class="art-key art-key--line art-k-up"></span>Pelvis tilt</li>
+            </ul>
+<svg class="art-chart" id="ew-balance" viewBox="0 0 440 250" role="img" aria-labelledby="ew-balance-t">
+<title id="ew-balance-t">Balance scores in the last 1.2 seconds before a fall</title>
+<g class="art-grid">
+<line x1="40" x2="426" y1="206.0" y2="206.0"/>
+<line x1="40" x2="426" y1="158.0" y2="158.0"/>
+<line x1="40" x2="426" y1="110.0" y2="110.0"/>
+<line x1="40" x2="426" y1="62.0" y2="62.0"/>
+<line x1="40" x2="426" y1="14.0" y2="14.0"/>
+</g><g class="art-axis">
+<line class="art-base" x1="40" x2="426" y1="206" y2="206"/>
+<text x="32" y="210.0" text-anchor="end">0</text>
+<text x="32" y="162.0" text-anchor="end">0.25</text>
+<text x="32" y="114.0" text-anchor="end">0.5</text>
+<text x="32" y="66.0" text-anchor="end">0.75</text>
+<text x="32" y="18.0" text-anchor="end">1</text>
+<text x="40.0" y="224" text-anchor="middle">1.2</text>
+<text x="104.3" y="224" text-anchor="middle">1.0</text>
+<text x="168.7" y="224" text-anchor="middle">0.8</text>
+<text x="233.0" y="224" text-anchor="middle">0.6</text>
+<text x="297.3" y="224" text-anchor="middle">0.4</text>
+<text x="361.7" y="224" text-anchor="middle">0.2</text>
+<text x="426.0" y="224" text-anchor="middle">fall</text>
+<text x="233.0" y="246" text-anchor="middle">seconds before the fall</text>
+</g>
+<path class="art-line art-s-cp" d="M40.0 14.0 L52.9 14.0 L65.7 14.0 L78.6 14.0 L91.5 14.0 L104.3 14.0 L117.2 14.0 L130.1 14.0 L142.9 15.2 L155.8 27.1 L168.7 59.1 L181.5 100.2 L194.4 142.6 L207.3 177.6 L220.1 197.4 L233.0 204.5 L245.9 205.8 L258.7 206.0 L271.6 206.0 L284.5 206.0 L297.3 206.0 L310.2 206.0 L323.1 206.0 L335.9 206.0 L348.8 206.0 L361.7 206.0 L374.5 206.0 L387.4 206.0 L400.3 206.0 L413.1 206.0 L426.0 206.0"/>
+<path class="art-line art-s-up" d="M40.0 22.3 L52.9 23.8 L65.7 24.9 L78.6 27.8 L91.5 31.9 L104.3 33.2 L117.2 37.4 L130.1 41.8 L142.9 47.4 L155.8 54.3 L168.7 61.4 L181.5 70.8 L194.4 80.6 L207.3 91.6 L220.1 106.2 L233.0 122.1 L245.9 137.1 L258.7 154.0 L271.6 169.7 L284.5 182.4 L297.3 189.3 L310.2 196.6 L323.1 201.6 L335.9 204.3 L348.8 205.4 L361.7 205.8 L374.5 206.0 L387.4 206.0 L400.3 206.0 L413.1 206.0 L426.0 206.0"/>
+<circle class="art-dot art-s-cp" cx="194.4" cy="142.6" r="4"/>
+<text class="art-annot" x="184.4" y="160.6" text-anchor="end">0.33 at 0.72 s</text>
+<g class="art-cross" aria-hidden="true"><line x1="0" x2="0" y1="14" y2="206"/></g>
+<rect class="art-hit" x="40" y="14" width="386" height="192" fill="transparent"/>
+</svg>
+          </div>
+          <div class="art-panel">
+            <h4>Pose error (cm)</h4>
+            <ul class="art-legend" aria-hidden="true"><li><span class="art-key art-key--line art-k-kp"></span>Mean keypoint error</li></ul>
+<svg class="art-chart" id="ew-pose" viewBox="0 0 440 250" role="img" aria-labelledby="ew-pose-t">
+<title id="ew-pose-t">Pose error in the last 1.2 seconds before a fall</title>
+<g class="art-grid">
+<line x1="40" x2="426" y1="206.0" y2="206.0"/>
+<line x1="40" x2="426" y1="151.1" y2="151.1"/>
+<line x1="40" x2="426" y1="96.3" y2="96.3"/>
+<line x1="40" x2="426" y1="41.4" y2="41.4"/>
+</g><g class="art-axis">
+<line class="art-base" x1="40" x2="426" y1="206" y2="206"/>
+<text x="32" y="210.0" text-anchor="end">0</text>
+<text x="32" y="155.1" text-anchor="end">10</text>
+<text x="32" y="100.3" text-anchor="end">20</text>
+<text x="32" y="45.4" text-anchor="end">30</text>
+<text x="40.0" y="224" text-anchor="middle">1.2</text>
+<text x="104.3" y="224" text-anchor="middle">1.0</text>
+<text x="168.7" y="224" text-anchor="middle">0.8</text>
+<text x="233.0" y="224" text-anchor="middle">0.6</text>
+<text x="297.3" y="224" text-anchor="middle">0.4</text>
+<text x="361.7" y="224" text-anchor="middle">0.2</text>
+<text x="426.0" y="224" text-anchor="middle">fall</text>
+<text x="233.0" y="246" text-anchor="middle">seconds before the fall</text>
+</g>
+<path class="art-line art-s-kp" d="M40.0 197.8 L52.9 197.2 L65.7 196.7 L78.6 195.6 L91.5 194.5 L104.3 193.9 L117.2 192.8 L130.1 192.3 L142.9 191.2 L155.8 189.5 L168.7 188.4 L181.5 186.8 L194.4 184.1 L207.3 181.9 L220.1 179.7 L233.0 176.9 L245.9 173.1 L258.7 169.2 L271.6 163.8 L284.5 158.3 L297.3 152.8 L310.2 146.2 L323.1 138.5 L335.9 130.3 L348.8 119.3 L361.7 108.9 L374.5 96.3 L387.4 83.1 L400.3 66.7 L413.1 46.4 L426.0 22.8"/>
+<circle class="art-dot art-s-kp" cx="194.4" cy="184.1" r="4"/>
+<text class="art-annot" x="186.4" y="172.1" text-anchor="end">4.0 cm at 0.72 s</text>
+<g class="art-cross" aria-hidden="true"><line x1="0" x2="0" y1="14" y2="206"/></g>
+<rect class="art-hit" x="40" y="14" width="386" height="192" fill="transparent"/>
+</svg>
+          </div>
+        </div>
+        <div class="art-tip" role="presentation"></div>
+      </div>
+      <figcaption>About 0.7 s before the fall the capture-point score has already dropped to 0.33, while the pose error is only 4.0 cm and the pelvis-tilt score is still 0.65. The policy gets told about a fall while there is still time to stop it.</figcaption>
+      <details class="art-details">
+        <summary>Show the numbers</summary>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Seconds before fall</th><th class="r">Capture point score</th><th class="r">Pelvis tilt score</th><th class="r">Capture point inside feet (cm)</th><th class="r">Pose error (cm)</th></tr></thead>
+            <tbody>
+<tr><td>1.20</td><td class="r">1.00</td><td class="r">0.96</td><td class="r">5.9</td><td class="r">1.5</td></tr>
+<tr><td>1.08</td><td class="r">1.00</td><td class="r">0.93</td><td class="r">4.7</td><td class="r">1.9</td></tr>
+<tr><td>0.96</td><td class="r">1.00</td><td class="r">0.88</td><td class="r">3.0</td><td class="r">2.4</td></tr>
+<tr><td>0.84</td><td class="r">0.93</td><td class="r">0.79</td><td class="r">0.9</td><td class="r">3.0</td></tr>
+<tr><td>0.72</td><td class="r">0.33</td><td class="r">0.65</td><td class="r">-2.2</td><td class="r">4.0</td></tr>
+<tr><td>0.60</td><td class="r">0.01</td><td class="r">0.44</td><td class="r">-6.8</td><td class="r">5.3</td></tr>
+<tr><td>0.48</td><td class="r">0.00</td><td class="r">0.19</td><td class="r">-13.5</td><td class="r">7.7</td></tr>
+<tr><td>0.36</td><td class="r">0.00</td><td class="r">0.05</td><td class="r">-22.7</td><td class="r">10.9</td></tr>
+<tr><td>0.24</td><td class="r">0.00</td><td class="r">0.00</td><td class="r">-35.1</td><td class="r">15.8</td></tr>
+<tr><td>0.12</td><td class="r">0.00</td><td class="r">0.00</td><td class="r">-52.4</td><td class="r">22.4</td></tr>
+<tr><td>0.00</td><td class="r">0.00</td><td class="r">0.00</td><td class="r">-71.6</td><td class="r">33.4</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </figure>
+
+    <div class="art-two" style="margin-top:48px">
+      <div class="art-prose" style="margin-top:0">
+        <h3 style="margin-top:0">The other changes</h3>
+        <p>The reward was the biggest change, but not the only one. The rest are listed here.</p>
+      </div>
+      <dl class="specs">
+        <div><dt>A critic that sees more</dt><dd>19 extra values only the simulator knows</dd></div>
+        <div><dt>A curriculum</dt><dd>one-leg motions unlock at 80 % survival</dd></div>
+        <div><dt>Looking further ahead</dt><dd>γ = 0.995, about 4 s (was 2 s)</dd></div>
+        <div><dt>Smaller, safer updates</dt><dd>stop when the policy changes too much</dd></div>
+        <div><dt>Stronger ankles</dt><dd>correction range 0.4 → 0.7 rad</dd></div>
+      </dl>
+    </div>
+    <div class="art-prose">
+      <p><em>A critic that sees more.</em> PPO trains two networks: the policy (actor) and a critic that predicts how much reward is coming. The critic now also sees the robot’s true velocity, centre of mass, capture-point margin, foot contacts, floor friction and any push, so it can predict a fall. The actor still sees only what the real robot can measure, so it stays deployable.</p>
+      <p><em>A curriculum.</em> Training starts with motions where both feet stay planted. Balancing on one leg unlocks once the robot survives 80 % of those episodes, and stepping after that. Easy motions keep being practised so they aren’t forgotten.</p>
+      <p><em>Stronger ankles.</em> The ankle’s position loop has a stiffness of 40 N·m per radian (the gain in <a href="https://github.com/unitreerobotics/unitree_rl_gym/blob/276801e46c5d433564f24658bac64f254b7d2d4b/deploy/deploy_mujoco/configs/g1.yaml">Unitree’s G1 config</a>), so a 0.4 rad correction made at most 16 N·m. For the model’s 35 kg that moves the pressure under the foot by about 4.6 cm, a quarter of the 17 cm between the front and back contact points in <code>g1_29dof.xml</code>. Raising the range to 0.7 rad allows about 8 cm.</p>
+      <p>In a short local test (8 simulated robots, 400,000 steps) the average episode grew from 1.3 to 1.9 s with these changes, against 1.2 to 1.4 s before. That is a tiny slice of the full run, and the two tests used different motion mixes, so we treat it as a sign of direction, not a result. The full training run is under way.</p>
+    </div>
+
+    <figure class="art-fig" id="fig-3">
+      <div class="art-fig-head"><span>Fig. 3 — the robot moving in simulation</span><span>MuJoCo</span></div>
+      <div class="art-fig-body">
+        <img class="art-gif" src="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/assets/following.gif" alt="Animation of the simulated Unitree G1 humanoid moving in the MuJoCo simulator" loading="lazy">
+      </div>
+      <figcaption>The simulated G1 in MuJoCo. Each evaluation during training replays the same episodes, so recordings from different points in training can be compared directly.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ § 05 ============ -->
+  <section class="section section--wide container">
+    <div class="split">
+      <div class="split-copy">
+        <span class="sec-num">§ 05</span>
+        <h2>Watching it learn</h2>
+        <p class="body-lg">A training run takes many hours, and the reward curve alone doesn’t say whether the robot is getting better at balancing. Every run therefore records the same fixed test episodes as it goes: survival per motion kind, pose error, and a short video, every 5 % of the run. A model backup is saved every 10 %, and a small script turns any backup into a GIF like Fig. 3.</p>
+        <dl class="specs">
+          <div><dt>Videos + test scores</dt><dd>every 5 %</dd></div>
+          <div><dt>Model backups</dt><dd>every 10 %</dd></div>
+          <div><dt>Most useful number</dt><dd>survival per motion kind</dd></div>
+          <div><dt>Rendering over SSH</dt><dd>EGL, on the GPU</dd></div>
+        </dl>
+      </div>
+      <div class="printout printout--code">
+        <div class="sprockets" aria-hidden="true"></div>
+        <div class="print-body">
+          <div class="pl pl--muted">**** logs/pose_stage1 ****</div>
+          <div class="pl"><span class="ln">0010</span><span>config.json        run settings</span></div>
+          <div class="pl"><span class="ln">0020</span><span>progress.csv       training log</span></div>
+          <div class="pl"><span class="ln">0030</span><span>eval.csv           survival per motion kind</span></div>
+          <div class="pl"><span class="ln">0040</span><span>curriculum.json    unlocked motions</span></div>
+          <div class="pl"><span class="ln">0050</span><span>videos/            every 5 %</span></div>
+          <div class="pl"><span class="ln">0060</span><span>checkpoints/       every 10 %</span></div>
+          <div class="pl"><span class="ln">0070</span><span>pose_stage1.zip    final policy</span></div>
+          <div class="pl pl--muted">**** End of listing ****</div>
+        </div>
+        <div class="sprockets sprockets--right" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ § 06 ============ -->
+  <section class="section container" id="mass-and-infill">
+    <header class="section-head">
+      <span class="sec-num">§ 06</span>
+      <h2>Mass, infill and the model</h2>
+      <span class="page-num">— 06 / 08 —</span>
+    </header>
+    <div class="section-intro">
+      <p class="body-lg">Everything above uses the masses in <code class="art-inline-code">g1_29dof.xml</code>, the G1 as Unitree modelled it. OpenG1’s links will be printed, and a printed part’s mass depends on its infill, walls and material. That is a choice we get to make part by part, and the simulator can show what each choice does to the joints and to balance before anything is printed. All numbers in this section were computed from that file; § 07 lists where each one comes from.</p>
+      <span class="meta">G1 model: 35.1 kg</span>
+    </div>
+
+    <div class="art-two" style="margin-top:36px">
+      <div>
+        <div class="art-prose" style="margin-top:0">
+          <h3 style="margin-top:0">Where the mass is</h3>
+          <p>Link masses from <code>g1_29dof.xml</code>, grouped by body part.</p>
+        </div>
+        <div class="table-wrap" style="margin-top:20px">
+          <table class="data-table">
+            <thead><tr><th>Part of the body</th><th class="r">Mass (kg)</th><th class="r">Share</th></tr></thead>
+            <tbody>
+<tr><td>Legs (hips, thighs, shins, feet)</td><td class="r">14.37</td><td class="r">41 %</td></tr>
+<tr><td>Waist, torso and head</td><td class="r">9.89</td><td class="r">28 %</td></tr>
+<tr><td>Arms and hands</td><td class="r">7.04</td><td class="r">20 %</td></tr>
+<tr><td>Pelvis</td><td class="r">3.81</td><td class="r">11 %</td></tr>
+            </tbody>
+            <tfoot><tr><td>Total</td><td class="r">35.11</td><td class="r">100 %</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="art-prose" style="margin-top:0">
+          <h3 style="margin-top:0">How hard the joints work holding still</h3>
+          <p>The largest torque each joint needs just to hold the motion library’s poses against gravity, simulated with those masses, against the joint limit in the same file.</p>
+        </div>
+        <div class="table-wrap" style="margin-top:20px">
+          <table class="data-table">
+            <thead><tr><th>Joint</th><th class="r">Needed (N·m)</th><th class="r">Limit (N·m)</th><th class="r">Used</th></tr></thead>
+            <tbody>
+<tr><td>Waist pitch</td><td class="r">33.0</td><td class="r">±50</td><td class="r">66 %</td></tr>
+<tr><td>Hip roll*</td><td class="r">48.0</td><td class="r">±88</td><td class="r">55 %</td></tr>
+<tr><td>Ankle roll</td><td class="r">20.3</td><td class="r">±50</td><td class="r">41 %</td></tr>
+<tr><td>Hip pitch</td><td class="r">34.4</td><td class="r">±88</td><td class="r">39 %</td></tr>
+<tr><td>Ankle pitch</td><td class="r">19.6</td><td class="r">±50</td><td class="r">39 %</td></tr>
+<tr><td>Knee</td><td class="r">42.7</td><td class="r">±139</td><td class="r">31 %</td></tr>
+<tr><td>Shoulder pitch</td><td class="r">6.3</td><td class="r">±25</td><td class="r">25 %</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="meta" style="margin:10px 0 0;text-transform:none;letter-spacing:0.04em">* <code>g1_29dof.xml</code> gives hip roll ±88 N·m; <a href="https://github.com/HybridRobotics/whole_body_tracking/blob/9db915838b17785c6fec90c91fe80b95b147e1bd/source/whole_body_tracking/whole_body_tracking/robots/g1.py">BeyondMimic’s G1 config</a> uses 139 N·m (the knee’s motor), which would make it 35 %.</p>
+      </div>
+    </div>
+    <div class="art-prose">
+      <p>Holding torque scales directly with the mass being held: make the upper body 20 % heavier and the waist pitch needs 20 % more just to stand in these poses, before any balancing on top. The waist is already the tightest joint, because it carries the whole upper body, so a lighter torso buys more margin there than mass saved anywhere else.</p>
+
+      <h3>Where mass sits matters for balance</h3>
+      <p>Standing, the model’s centre of mass is 7.1 cm behind the front contact points of its feet. Raising both arms straight out in front moves it forward. Here we scaled the arm masses in the model to see how much that depends on how heavy the arms are:</p>
+    </div>
+    <div class="table-wrap" style="margin-top:24px;max-width:860px">
+      <table class="data-table">
+        <thead><tr><th>Arm mass (both arms)</th><th class="r">Centre of mass moves forward</th><th class="r">Room left to the toes</th><th class="r">Waist pitch torque</th></tr></thead>
+        <tbody>
+<tr><td>3.5 kg (half the G1’s)</td><td class="r">1.3 cm</td><td class="r">82 %</td><td class="r">7.0 N·m</td></tr>
+<tr><td>5.3 kg</td><td class="r">2.0 cm</td><td class="r">72 %</td><td class="r">10.3 N·m</td></tr>
+<tr><td>7.0 kg (the G1’s)</td><td class="r">2.6 cm</td><td class="r">63 %</td><td class="r">13.7 N·m</td></tr>
+<tr><td>8.8 kg</td><td class="r">3.3 cm</td><td class="r">54 %</td><td class="r">17.0 N·m</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="art-prose">
+      <p>Mass far from the hips (hands, forearms, shins, feet) shifts the balance point more, and takes more torque to swing, than the same mass near the pelvis. A gram saved at the end of a limb is worth more than a gram saved in the middle.</p>
+
+      <h3>When the model’s mass is wrong</h3>
+      <p>The gravity feed-forward from § 03, and the policy itself, are built on the model’s masses. To see what a wrong mass does, we made the simulated robot lighter or heavier than the model the controller believes in, and measured the untrained robot’s pose error after 0.2 s (average of 40 episodes):</p>
+    </div>
+    <div class="table-wrap" style="margin-top:24px;max-width:860px">
+      <table class="data-table">
+        <thead><tr><th>Real robot vs model</th><th>Controller assumes</th><th class="r">Pose error at 0.2 s</th><th class="r">Pelvis height error</th></tr></thead>
+        <tbody>
+<tr class="muted"><td>Any</td><td>no gravity feed-forward</td><td class="r">4.7 cm</td><td class="r">—</td></tr>
+<tr><td>Same mass</td><td>correct mass</td><td class="r">1.4 cm</td><td class="r">−0.1 cm</td></tr>
+<tr><td>15 % lighter</td><td>model mass</td><td class="r">1.5 cm</td><td class="r">+0.2 cm</td></tr>
+<tr><td>30 % lighter</td><td>model mass</td><td class="r">1.9 cm</td><td class="r">+0.4 cm</td></tr>
+<tr><td>15 % heavier</td><td>model mass</td><td class="r">1.7 cm</td><td class="r">−0.4 cm</td></tr>
+<tr><td>30 % heavier</td><td>model mass</td><td class="r">2.1 cm</td><td class="r">−0.8 cm</td></tr>
+<tr><td>30 % heavier</td><td>updated mass</td><td class="r">1.4 cm</td><td class="r">−0.1 cm</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="art-prose">
+      <p>The feed-forward cuts the error from 4.7 to 1.4 cm. A 30 % mass error gives back up to 0.7 cm of that, and updating the model wins it all back. The trained policy has the same problem in a less visible way: its corrections were learned for one mass. Two fixes, used together: put measured masses in the model, and train with masses that vary a little every episode, so one policy copes with the differences between prints.</p>
+
+      <h3>What would printed parts weigh?</h3>
+      <p>We don’t have OpenG1’s printed masses yet. Until we do, we can estimate them from the G1’s own link shapes. The meshes that <code>g1_29dof.xml</code> uses are closed surfaces, so their volume and surface area can be measured exactly. A printed part is a solid skin (walls, top and bottom layers) around a partly hollow core, and infill only changes the core:</p>
+    </div>
+    <div class="art-formula">
+      m ≈ ρ · ( V<sub>skin</sub> + f · V<sub>core</sub> ) + m<sub>hardware</sub>
+      <small>ρ: material density, PLA 1.24 g/cm³ (<a href="https://filament2print.com/en/pla/3454-prusament-pla.html">Prusament PLA, ISO 1183</a>) or PETG 1.27 g/cm³ (<a href="https://filament2print.com/en/pet-petg-cpe/3427-prusament-petg-.html">Prusament PETG, ISO 1183</a>) · f: infill fraction · V<sub>skin</sub> ≈ surface area × skin thickness; we assume 1.2 mm (3 walls of 0.4 mm, and about the same top and bottom) · V<sub>core</sub>: the rest of the volume · m<sub>hardware</sub>: motors, bearings, screws, battery and electronics, which infill doesn’t change and which this estimate leaves out.</small>
+    </div>
+    <div class="table-wrap" style="margin-top:24px;max-width:960px">
+      <table class="data-table">
+        <thead><tr><th>Part of the body</th><th class="r">G1 model (kg)</th><th class="r">Mesh volume (cm³)</th><th class="r">PLA, 15 % infill (kg)</th><th class="r">PLA, 40 % (kg)</th><th class="r">PLA, solid (kg)</th></tr></thead>
+        <tbody>
+<tr><td>Legs (hips, thighs, shins, feet)</td><td class="r">14.4</td><td class="r">7,519</td><td class="r">2.8</td><td class="r">4.7</td><td class="r">9.3</td></tr>
+<tr><td>Waist, torso and head</td><td class="r">9.9</td><td class="r">5,173</td><td class="r">2.1</td><td class="r">3.4</td><td class="r">6.4</td></tr>
+<tr><td>Arms and hands</td><td class="r">7.0</td><td class="r">2,957</td><td class="r">1.2</td><td class="r">1.9</td><td class="r">3.7</td></tr>
+<tr><td>Pelvis</td><td class="r">3.8</td><td class="r">1,485</td><td class="r">0.5</td><td class="r">0.9</td><td class="r">1.8</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="r">35.1</td><td class="r">17,135</td><td class="r">6.6</td><td class="r">10.9</td><td class="r">21.2</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="art-prose">
+      <p>Printed in PLA at 15–40 % infill, plastic in the G1’s shapes would weigh 6.6–10.9 kg; PETG adds about 2 %. The G1 model weighs 35.1 kg, but its links aren’t printed plastic, so this isn’t a like-for-like comparison. What it does show is that at these infills the plastic comes to 19–31 % of the G1 model’s mass. Actuators, battery and electronics come on top of it, and need weighing and putting into the model just as much as the prints.</p>
+      <p>Two limits on this estimate. OpenG1’s CAD won’t match the G1’s shapes exactly: parts will be hollowed around actuators and split to fit a print bed. And the skin thickness is our assumption, not a measurement. Once there are real parts, use the slicer’s filament estimate for each one, and better still a kitchen scale. Lower infill is also weaker, so load paths (actuator mounts, joint housings, screw bosses) need extra walls or local dense infill even where the rest of a part is light.</p>
+
+      <h3>Putting the numbers into the simulation</h3>
+      <p>MuJoCo stores each link’s mass and rotational inertia. To give a link its real mass, set the mass and scale the inertia by the same ratio (same shape, new mass). If heavy hardware sits off-centre on a link, take the link’s centre of mass from CAD too. Change both the physics model and the model the gravity feed-forward uses:</p>
+    </div>
+    <div class="art-code-head"><span>python</span><span>tested on the env from § 03</span></div>
+<pre class="art-code"><code>import mujoco
+from G1_tele.envs.pose_tracking import PoseTrackingEnv
+
+def set_link_mass(model, body, mass_kg):
+    <span class="c">"""Give a link a new mass, keeping the shape of its inertia."""</span>
+    b = model.body(body).id
+    model.body_inertia[b] *= mass_kg / model.body_mass[b]
+    model.body_mass[b] = mass_kg
+
+env = PoseTrackingEnv()
+<span class="c"># the physics model, and the model behind the gravity feed-forward</span>
+for m, d in ((env.base.m, env.base.d), (env.kin.m, env.kin.d)):
+    set_link_mass(m, "left_knee_link", 1.45)    <span class="c"># example value: slicer estimate + weighed hardware</span>
+    set_link_mass(m, "right_knee_link", 1.45)
+    mujoco.mj_setConst(m, d)                    <span class="c"># refresh values MuJoCo derives from mass</span></code></pre>
+    <div class="art-prose">
+      <p>For training, a few lines in the episode reset give every episode a slightly different print, so the policy can’t rely on one exact mass:</p>
+    </div>
+    <div class="art-code-head"><span>python</span><span>sketch: not in the env yet</span></div>
+<pre class="art-code"><code><span class="c"># in PoseTrackingEnv.reset(); mass0 / inertia0 saved once at start-up</span>
+s = self.np_random.uniform(0.85, 1.15, size=m.nbody)    <span class="c"># ±15 % per link</span>
+m.body_mass[:] = self.mass0 * s
+m.body_inertia[:] = self.inertia0 * s[:, None]
+mujoco.mj_setConst(m, d)</code></pre>
+
+    <div class="art-prose" style="margin-top:40px">
+      <h3>Choosing infill with the simulator</h3>
+      <p>Put together, this gives a loop for choosing infill part by part, with the simulator in the middle:</p>
+    </div>
+    <ol class="steps">
+      <li><div><h3>Pick a first guess</h3><p>Light infill where parts are mostly shape (covers, forearm and shin shells), dense infill and extra walls where loads go (actuator mounts, joint housings). Keep the ends of the limbs as light as strength allows.</p></div></li>
+      <li><div><h3>Get the masses</h3><p>Slice each part and note its filament estimate; weigh the hardware that bolts to it. Add them per link.</p></div></li>
+      <li><div><h3>Update the model</h3><p>Write the masses into the model as above, in both the physics model and the gravity feed-forward model.</p></div></li>
+      <li><div><h3>Check the torque margins</h3><p>Run the motion library through the holding-torque check and compare every joint with its actuator’s limit. Watch the waist pitch first: it is at 66 % with the G1 model’s masses.</p></div></li>
+      <li><div><h3>Fine-tune the policy</h3><p>Continue training from the existing policy on the new masses, with ±15 % mass variation. If survival per motion kind holds up, print; if not, go back to step 1 and take mass off where it costs the most.</p></div></li>
+    </ol>
+  </section>
+
+  <!-- ============ § 07 ============ -->
+  <section class="section container" id="sources">
+    <header class="section-head">
+      <span class="sec-num">§ 07</span>
+      <h2>Where the numbers come from</h2>
+      <span class="page-num">— 07 / 08 —</span>
+    </header>
+    <div class="section-intro">
+      <p class="body-lg">Every number in this article was either measured in our simulation, read from a file, or taken from a linked source. Where something is our own assumption, it says so. Nothing here is a measurement of OpenG1’s printed parts yet; those will replace the estimates when they exist.</p>
+      <span class="meta">Code: <a href="https://github.com/shepai/pose-to-biped">pose-to-biped</a></span>
     </div>
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr><th>Item</th><th class="r">6512 actuator</th><th class="r">5010 actuator</th></tr></thead>
+        <thead><tr><th>Numbers</th><th>Source</th><th>Kind</th></tr></thead>
         <tbody>
-          <tr><td>Brushless motor (drone type)</td><td class="r">$129</td><td class="r">$84</td></tr>
-          <tr><td>B-G431B-ESC1 driver</td><td class="r">$19</td><td class="r">$19</td></tr>
-          <tr><td>AS5600 position encoder</td><td class="r">$3</td><td class="r">$3</td></tr>
-          <tr><td>Bearings</td><td class="r">$23</td><td class="r">$18</td></tr>
-          <tr><td>Fasteners</td><td class="r">$5</td><td class="r">$4</td></tr>
-          <tr><td>3D-printed parts</td><td class="r">$4</td><td class="r">$3</td></tr>
-          <tr><td>Cables and connectors</td><td class="r">$5</td><td class="r">$5</td></tr>
+          <tr><td>Link masses, joint limits, foot contact points</td><td><code>g1_29dof.xml</code> (Unitree’s G1 model, from <a href="https://github.com/unitreerobotics/unitree_rl_gym">Unitree RL Gym</a>)</td><td>from file</td></tr>
+          <tr><td>Holding torques, centre-of-mass shifts, wrong-mass test, gravity feed-forward, Fig. 2</td><td>Our MuJoCo runs on <code>g1_29dof.xml</code> and our motion library (120 clips, 43 min)</td><td>measured in simulation</td></tr>
+          <tr><td>Printed-mass estimate: volumes and areas</td><td>The G1 meshes referenced by <code>g1_29dof.xml</code></td><td>measured from geometry</td></tr>
+          <tr><td>PLA and PETG density</td><td><a href="https://filament2print.com/en/pla/3454-prusament-pla.html">Prusament PLA</a> and <a href="https://filament2print.com/en/pet-petg-cpe/3427-prusament-petg-.html">Prusament PETG</a> product pages (ISO 1183)</td><td>published</td></tr>
+          <tr><td>1.2 mm skin, infill levels shown</td><td>Our choice</td><td>assumption</td></tr>
+          <tr><td>First attempt: episode lengths, reward per step</td><td><code>progress.csv</code> from our first training run</td><td>measured in training</td></tr>
+          <tr><td>Armature 0.01 kg·m² (12-joint model)</td><td><a href="https://github.com/unitreerobotics/unitree_rl_gym/blob/276801e46c5d433564f24658bac64f254b7d2d4b/resources/robots/g1_description/g1_12dof.xml">g1_12dof.xml</a> in Unitree RL Gym</td><td>from file</td></tr>
+          <tr><td>Per-motor armature 0.0036–0.025 kg·m²</td><td><a href="https://github.com/HybridRobotics/whole_body_tracking/blob/9db915838b17785c6fec90c91fe80b95b147e1bd/source/whole_body_tracking/whole_body_tracking/robots/g1.py">BeyondMimic G1 config</a></td><td>published</td></tr>
+          <tr><td>Armature = rotor inertia × gear ratio²</td><td><a href="https://humanoid.guide/?p=19933">Humanoid.guide on gear ratios</a></td><td>published</td></tr>
+          <tr><td>Joint PD gains (ankle 40 N·m/rad)</td><td><a href="https://github.com/unitreerobotics/unitree_rl_gym/blob/276801e46c5d433564f24658bac64f254b7d2d4b/deploy/deploy_mujoco/configs/g1.yaml">Unitree RL Gym G1 deploy config</a></td><td>published</td></tr>
+          <tr><td>Reward weights, curriculum, PPO settings</td><td>Our training code (<a href="https://github.com/shepai/pose-to-biped">pose-to-biped</a>)</td><td>our design</td></tr>
+          <tr><td>Short training comparison (1.3 → 1.9 s)</td><td>Our local test, 8 robots, 400,000 steps</td><td>measured in training</td></tr>
+          <tr class="muted"><td>OpenG1 printed masses, actuator masses and armature</td><td>Not measured yet</td><td>to come</td></tr>
         </tbody>
-        <tfoot><tr><td>Total</td><td class="r">$188</td><td class="r">$136</td></tr></tfoot>
       </table>
     </div>
   </section>
 
-  <!-- ============ § 05 — Build steps ============ -->
-  <section class="section container" id="steps">
-    <header class="section-head">
-      <span class="sec-num">§ 05</span>
-      <h2>Build steps</h2>
-      <span class="page-num">— 05 / 06 —</span>
-    </header>
-    <ol class="steps">
-      <li><div><h3>Print the parts</h3><p>Print the housing, cycloidal disc, input shaft and output shaft in PLA on a desktop FDM printer. Berkeley sized every part to fit a 200 × 200 × 200 mm build volume. Our own tested print settings will be added here.</p></div></li>
-      <li><div><h3>Embed the brass standoff</h3><p>A brass hex standoff is pressed into the input shaft. It stiffens the shaft and carries torque from the motor to the cycloidal discs.</p></div></li>
-      <li><div><h3>Fit the bearings</h3><p>Press the bearings into the housing and output shaft. The 6512 design is sized around the common 6811ZZ ball bearing.</p></div></li>
-      <li><div><h3>Assemble the cycloidal stage</h3><p>Stack the cycloidal disc on the eccentric input shaft and seat it against the pins in the housing. It should turn smoothly by hand before the motor goes on.</p></div></li>
-      <li><div><h3>Mount the motor and encoder</h3><p>Fix the motor to the input shaft, then mount the AS5600 magnetic encoder and its magnet as shown in the CAD.</p></div></li>
-      <li><div><h3>Clamp with through-screws</h3><p>Long through-screws pull the layers together so the printed parts aren’t relying on layer adhesion alone.</p></div></li>
-      <li><div><h3>Wire the driver</h3><p>Connect motor phases, encoder, power and CAN to the B-G431B-ESC1. Each CAN bus runs at 1 Mbps and Berkeley’s design supports up to 64 devices on one bus, so give every joint its own ID.</p></div></li>
-      <li><div><h3>Calibrate and test</h3><p>Set the zero position, then check smooth rotation, torque response and backlash before the actuator goes into the robot. Test on a bench power supply, not the battery.</p></div></li>
-    </ol>
-    <p class="note">Safety: motors can pinch fingers and LiPo batteries can start fires if shorted or damaged. Keep clear of moving parts, use a bench supply while testing, and never leave a charging battery unattended.</p>
-  </section>
-
-  <!-- ============ § 06 — Performance + sizing ============ -->
+  <!-- ============ § 08 ============ -->
   <section class="section container">
-    <div class="split">
-      <div class="split-copy">
-        <span class="sec-num">§ 06</span>
-        <h2>What to expect</h2>
-        <p class="body-lg">These are Berkeley’s results for the 6512 actuator, not ours. We’ll publish our own measurements once our actuators are built. Berkeley noted that heat in long runs hasn’t been studied properly yet, which matters for a printed structure.</p>
-        <dl class="specs">
-          <div><dt>Gearbox efficiency</dt><dd>about 90% in most conditions</dd></div>
-          <div><dt>Transmission stiffness</dt><dd>about 319 N·m/rad</dd></div>
-          <div><dt>Backlash, new units</dt><dd>up to 0.0229 rad</dd></div>
-          <div><dt>Durability test</dt><dd>60 hours, no failure</dd></div>
-        </dl>
-        <div class="sources">
-          <a class="link-arrow" href="https://arxiv.org/abs/2504.17249">Berkeley Humanoid Lite paper <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
-          <a class="link-arrow" href="https://lite.berkeley-humanoid.org">Berkeley design files <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
-        </div>
+    <header class="section-head">
+      <span class="sec-num">§ 08</span>
+      <h2>What’s next</h2>
+      <span class="page-num">— 08 / 08 —</span>
+    </header>
+    <div class="art-two" style="margin-top:28px">
+      <div class="art-prose" style="margin-top:0">
+        <ul>
+          <li>Finish the full training runs and publish survival per motion kind in this article.</li>
+          <li>Replace the G1 model’s link masses with our own: slicer estimates first, weighed parts later.</li>
+          <li>Work out the armature of our cycloidal actuators (rotor inertia × ratio²) and put it in the model.</li>
+          <li>Add mass variation as a standard training option.</li>
+          <li>Feed real body-tracker points through the retargeter.</li>
+          <li>Move a trained policy onto the printed robot.</li>
+        </ul>
       </div>
-      <div class="split-copy">
-        <h2>Sizing for the G1</h2>
-        <p class="body-lg">The G1’s torque limits fall into five tiers. Berkeley’s printed actuators come in two sizes, and the paper doesn’t give their peak torque, so check their repository before committing a joint to one. The hips and knees are the hard part: the G1’s knee limit is well above the 81.1 N·m peak of the largest original Berkeley Humanoid actuator.</p>
-        <dl class="specs">
-          <div><dt>±139 N·m — 2 joints</dt><dd>knee × 2</dd></div>
-          <div><dt>±88 N·m — 7 joints</dt><dd>hip pitch × 2, hip roll × 2, hip yaw × 2, waist yaw × 1</dd></div>
-          <div><dt>±50 N·m — 6 joints</dt><dd>ankle pitch × 2, ankle roll × 2, waist roll × 1, waist pitch × 1</dd></div>
-          <div><dt>±25 N·m — 10 joints</dt><dd>shoulder pitch × 2, shoulder roll × 2, shoulder yaw × 2, elbow × 2, wrist roll × 2</dd></div>
-          <div><dt>±5 N·m — 4 joints</dt><dd>wrist pitch × 2, wrist yaw × 2</dd></div>
-        </dl>
+      <div class="sources" style="display:flex;flex-direction:column;gap:4px">
+        <p class="meta" style="margin:0 0 4px">Further reading</p>
+        <a class="link-arrow" href="https://arxiv.org/abs/1707.06347">PPO (Schulman et al., 2017) <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        <a class="link-arrow" href="https://arxiv.org/abs/1804.02717">DeepMimic (Peng et al., 2018) <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        <a class="link-arrow" href="https://arxiv.org/abs/2403.04436">H2O teleoperation (He et al., 2024) <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        <a class="link-arrow" href="https://portfolio.erau.edu/en/publications/capture-point-a-step-toward-humanoid-push-recovery/">Capture point (Pratt et al., 2006) <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        <a class="link-arrow" href="https://github.com/HybridRobotics/whole_body_tracking/blob/9db915838b17785c6fec90c91fe80b95b147e1bd/source/whole_body_tracking/whole_body_tracking/robots/g1.py">BeyondMimic G1 config <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        <a class="link-arrow" href="https://github.com/unitreerobotics/unitree_rl_gym">Unitree RL Gym (G1 models) <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        <a class="link-arrow" href="https://mujoco.org">MuJoCo simulator <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        <a class="link-arrow" href="https://arxiv.org/abs/2504.17249">Berkeley Humanoid Lite paper <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
       </div>
     </div>
   </section>
@@ -277,9 +660,9 @@
     <nav class="footer-nav" aria-label="Project">
       <h3>Project</h3>
       <ul>
-        <li><a href="index.html#robot">The robot</a></li>
-        <li><a href="index.html#status">Roadmap</a></li>
-        <li><a href="index.html#follow">Updates</a></li>
+        <li><a href="https://open3dhumanoid.github.io/index.html#robot">The robot</a></li>
+        <li><a href="https://open3dhumanoid.github.io/index.html#status">Roadmap</a></li>
+        <li><a href="https://open3dhumanoid.github.io/index.html#follow">Updates</a></li>
         <li><a href="#">FAQ</a></li>
       </ul>
     </nav>
@@ -297,7 +680,7 @@
       <ul>
         <li><a href="https://open3dhumanoid.github.io/team.html">Team</a></li>
         <li><a href="https://open3dhumanoid.github.io/team.html#collaborators">Collaborators</a></li>
-        <li><a href="#">Source code</a></li>
+        <li><a href="https://github.com/open3dhumanoid">Source code</a></li>
         <li><a href="#">Contact</a></li>
       </ul>
     </nav>
@@ -305,10 +688,10 @@
 
   <dl class="title-block title-block--footer">
     <div class="wide"><dt>Project</dt><dd class="caps">OpenG1</dd></div>
-    <div><dt>Sheet</dt><dd>001-A</dd></div>
+    <div><dt>Sheet</dt><dd>D.01</dd></div>
     <div><dt>Size</dt><dd>A2</dd></div>
     <div><dt>Scale</dt><dd>1 : 1</dd></div>
-    <div><dt>Date</dt><dd>24.10.26</dd></div>
+    <div><dt>Date</dt><dd>03.11.26</dd></div>
     <div><dt>Rev</dt><dd class="accent">R0</dd></div>
   </dl>
 
@@ -320,6 +703,74 @@
     </div>
   </div>
 </footer>
+
+<script>
+/* Hover/focus readouts for Fig. 1 and Fig. 2. Every value is also in the captions and tables. */
+(function () {
+  var EW = [{"t": 0.0, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 33.4, "cp_margin_cm": -71.6}, {"t": 0.04, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 29.1, "cp_margin_cm": -65.1}, {"t": 0.08, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 25.4, "cp_margin_cm": -58.6}, {"t": 0.12, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 22.4, "cp_margin_cm": -52.4}, {"t": 0.16, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 20.0, "cp_margin_cm": -46.1}, {"t": 0.2, "r_cp": 0.0, "r_upright": 0.001, "kp_err_cm": 17.7, "cp_margin_cm": -40.3}, {"t": 0.24, "r_cp": 0.0, "r_upright": 0.003, "kp_err_cm": 15.8, "cp_margin_cm": -35.1}, {"t": 0.28, "r_cp": 0.0, "r_upright": 0.009, "kp_err_cm": 13.8, "cp_margin_cm": -30.6}, {"t": 0.32, "r_cp": 0.0, "r_upright": 0.023, "kp_err_cm": 12.3, "cp_margin_cm": -26.5}, {"t": 0.36, "r_cp": 0.0, "r_upright": 0.049, "kp_err_cm": 10.9, "cp_margin_cm": -22.7}, {"t": 0.4, "r_cp": 0.0, "r_upright": 0.087, "kp_err_cm": 9.7, "cp_margin_cm": -19.1}, {"t": 0.44, "r_cp": 0.0, "r_upright": 0.123, "kp_err_cm": 8.7, "cp_margin_cm": -16.1}, {"t": 0.48, "r_cp": 0.0, "r_upright": 0.189, "kp_err_cm": 7.7, "cp_margin_cm": -13.5}, {"t": 0.52, "r_cp": 0.0, "r_upright": 0.271, "kp_err_cm": 6.7, "cp_margin_cm": -10.9}, {"t": 0.56, "r_cp": 0.001, "r_upright": 0.359, "kp_err_cm": 6.0, "cp_margin_cm": -8.8}, {"t": 0.6, "r_cp": 0.008, "r_upright": 0.437, "kp_err_cm": 5.3, "cp_margin_cm": -6.8}, {"t": 0.64, "r_cp": 0.045, "r_upright": 0.52, "kp_err_cm": 4.8, "cp_margin_cm": -5.1}, {"t": 0.68, "r_cp": 0.148, "r_upright": 0.596, "kp_err_cm": 4.4, "cp_margin_cm": -3.5}, {"t": 0.72, "r_cp": 0.33, "r_upright": 0.653, "kp_err_cm": 4.0, "cp_margin_cm": -2.2}, {"t": 0.76, "r_cp": 0.551, "r_upright": 0.704, "kp_err_cm": 3.5, "cp_margin_cm": -1.1}, {"t": 0.8, "r_cp": 0.765, "r_upright": 0.753, "kp_err_cm": 3.2, "cp_margin_cm": -0.1}, {"t": 0.84, "r_cp": 0.932, "r_upright": 0.79, "kp_err_cm": 3.0, "cp_margin_cm": 0.9}, {"t": 0.88, "r_cp": 0.994, "r_upright": 0.826, "kp_err_cm": 2.7, "cp_margin_cm": 1.7}, {"t": 0.92, "r_cp": 1.0, "r_upright": 0.855, "kp_err_cm": 2.5, "cp_margin_cm": 2.4}, {"t": 0.96, "r_cp": 1.0, "r_upright": 0.878, "kp_err_cm": 2.4, "cp_margin_cm": 3.0}, {"t": 1.0, "r_cp": 1.0, "r_upright": 0.9, "kp_err_cm": 2.2, "cp_margin_cm": 3.6}, {"t": 1.04, "r_cp": 1.0, "r_upright": 0.907, "kp_err_cm": 2.1, "cp_margin_cm": 4.2}, {"t": 1.08, "r_cp": 1.0, "r_upright": 0.928, "kp_err_cm": 1.9, "cp_margin_cm": 4.7}, {"t": 1.12, "r_cp": 1.0, "r_upright": 0.943, "kp_err_cm": 1.7, "cp_margin_cm": 5.1}, {"t": 1.16, "r_cp": 1.0, "r_upright": 0.949, "kp_err_cm": 1.6, "cp_margin_cm": 5.5}, {"t": 1.2, "r_cp": 1.0, "r_upright": 0.957, "kp_err_cm": 1.5, "cp_margin_cm": 5.9}];
+
+  function showTip(tip, zone, x, y, rows) {
+    while (tip.firstChild) tip.removeChild(tip.firstChild);
+    rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "row";
+      if (r.color) { var k = document.createElement("i"); k.style.background = r.color; row.appendChild(k); }
+      var b = document.createElement("b"); b.textContent = r.value; row.appendChild(b);
+      if (r.label) { var l = document.createElement("span"); l.className = "lab"; l.textContent = r.label; row.appendChild(l); }
+      tip.appendChild(row);
+    });
+    var zr = zone.getBoundingClientRect();
+    tip.classList.add("on");
+    var w = tip.offsetWidth, left = x - zr.left + 14;
+    if (left + w > zr.width - 4) left = x - zr.left - w - 14;
+    tip.style.left = Math.max(4, left) + "px";
+    tip.style.top = Math.max(4, y - zr.top - 10) + "px";
+  }
+
+  /* Fig. 1: segmented bars */
+  document.querySelectorAll("[data-tipzone]").forEach(function (zone) {
+    var tip = zone.querySelector(".art-tip");
+    zone.querySelectorAll(".art-seg").forEach(function (seg) {
+      function on(e) {
+        var r = seg.getBoundingClientRect();
+        var x = e && e.clientX ? e.clientX : r.left + r.width / 2, y = e && e.clientY ? e.clientY : r.top;
+        var row = seg.closest(".art-segrow").querySelector(".art-rowlab").textContent;
+        showTip(tip, zone, x, y, [{ value: seg.dataset.value, color: getComputedStyle(seg).backgroundColor },
+                                  { value: seg.dataset.name, label: "· " + row.toLowerCase() }]);
+      }
+      seg.addEventListener("pointermove", on);
+      seg.addEventListener("focus", on);
+      seg.addEventListener("pointerleave", function () { tip.classList.remove("on"); });
+      seg.addEventListener("blur", function () { tip.classList.remove("on"); });
+    });
+  });
+
+  /* Fig. 2: one crosshair across both panels, one readout for every series */
+  var wrap = document.querySelector("[data-ew]");
+  if (!wrap) return;
+  var body = wrap.parentNode, tip = body.querySelector(".art-tip");
+  var svgs = wrap.querySelectorAll("svg"), ML = 40, PW = 386, W = 440, TMAX = 1.2;
+  function nearest(t) { return EW.reduce(function (a, b) { return Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a; }); }
+  function hide() { tip.classList.remove("on"); svgs.forEach(function (s) { s.querySelector(".art-cross").classList.remove("on"); }); }
+  svgs.forEach(function (svg) {
+    var hit = svg.querySelector(".art-hit");
+    hit.addEventListener("pointermove", function (e) {
+      var r = svg.getBoundingClientRect(), sx = (e.clientX - r.left) * W / r.width;
+      var d = nearest(TMAX - (sx - ML) / PW * TMAX), x = ML + (TMAX - d.t) / TMAX * PW;
+      svgs.forEach(function (s) {
+        var c = s.querySelector(".art-cross"); c.classList.add("on");
+        c.setAttribute("transform", "translate(" + x + " 0)");
+      });
+      showTip(tip, body, e.clientX, e.clientY, [
+        { value: d.t.toFixed(2) + " s", label: "before the fall" },
+        { value: d.r_cp.toFixed(2), label: "capture point", color: "#b5391a" },
+        { value: d.r_upright.toFixed(2), label: "pelvis tilt", color: "#1f8a7a" },
+        { value: d.kp_err_cm.toFixed(1) + " cm", label: "pose error", color: "#2f4f9f" }]);
+    });
+    hit.addEventListener("pointerleave", hide);
+  });
+})();
+</script>
 
 </body>
 </html>
