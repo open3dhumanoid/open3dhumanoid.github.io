@@ -91,7 +91,7 @@
     .art-two { display: flex; flex-wrap: wrap; gap: 32px 48px; margin-top: 8px; }
     .art-two > * { flex: 1 1 340px; min-width: 0; }
 
-    /* Fig. 4: drawn by the page from progress.csv */
+    /* Fig. 3: drawn by the page from progress.csv */
     .art-progress .art-panel + .art-panel { margin-top: 30px; }
     .art-ptitle { margin: 0 0 8px; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
     .art-multi { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px 28px; }
@@ -282,109 +282,8 @@
     <div class="art-prose">
       <h3>Seeing a fall coming</h3>
       <p>The most useful new term is the <em>capture point</em>. Take the robot’s centre of mass, and add its horizontal speed divided by ω = √(g / h), where h is the height of the centre of mass. That is where the robot would have to put a foot to come to a stop. If it lies inside the area covered by the feet on the ground (the support polygon), the robot can recover without stepping. If it lies outside, a fall has already started, even though nothing looks wrong yet. We work out the support polygon from the four contact points under each sole, and the reward pays full marks while the capture point stays at least 2 cm inside it.</p>
-      <p>To check it really warns early, we let the untrained robot fall 118 times and lined the falls up by the moment each one ended:</p>
     </div>
 
-    <figure class="art-fig" id="fig-2">
-      <div class="art-fig-head"><span>Fig. 2 — the last 1.2 s before a fall</span><span>median of 118 falls</span></div>
-      <div class="art-fig-body">
-        <div class="art-panels" data-ew>
-          <div class="art-panel">
-            <h4>Balance scores (0 to 1)</h4>
-            <ul class="art-legend">
-              <li><span class="art-key art-key--line art-k-cp"></span>Capture point</li>
-              <li><span class="art-key art-key--line art-k-up"></span>Pelvis tilt</li>
-            </ul>
-<svg class="art-chart" id="ew-balance" viewBox="0 0 440 250" role="img" aria-labelledby="ew-balance-t">
-<title id="ew-balance-t">Balance scores in the last 1.2 seconds before a fall</title>
-<g class="art-grid">
-<line x1="40" x2="426" y1="206.0" y2="206.0"/>
-<line x1="40" x2="426" y1="158.0" y2="158.0"/>
-<line x1="40" x2="426" y1="110.0" y2="110.0"/>
-<line x1="40" x2="426" y1="62.0" y2="62.0"/>
-<line x1="40" x2="426" y1="14.0" y2="14.0"/>
-</g><g class="art-axis">
-<line class="art-base" x1="40" x2="426" y1="206" y2="206"/>
-<text x="32" y="210.0" text-anchor="end">0</text>
-<text x="32" y="162.0" text-anchor="end">0.25</text>
-<text x="32" y="114.0" text-anchor="end">0.5</text>
-<text x="32" y="66.0" text-anchor="end">0.75</text>
-<text x="32" y="18.0" text-anchor="end">1</text>
-<text x="40.0" y="224" text-anchor="middle">1.2</text>
-<text x="104.3" y="224" text-anchor="middle">1.0</text>
-<text x="168.7" y="224" text-anchor="middle">0.8</text>
-<text x="233.0" y="224" text-anchor="middle">0.6</text>
-<text x="297.3" y="224" text-anchor="middle">0.4</text>
-<text x="361.7" y="224" text-anchor="middle">0.2</text>
-<text x="426.0" y="224" text-anchor="middle">fall</text>
-<text x="233.0" y="246" text-anchor="middle">seconds before the fall</text>
-</g>
-<path class="art-line art-s-cp" d="M40.0 14.0 L52.9 14.0 L65.7 14.0 L78.6 14.0 L91.5 14.0 L104.3 14.0 L117.2 14.0 L130.1 14.0 L142.9 15.2 L155.8 27.1 L168.7 59.1 L181.5 100.2 L194.4 142.6 L207.3 177.6 L220.1 197.4 L233.0 204.5 L245.9 205.8 L258.7 206.0 L271.6 206.0 L284.5 206.0 L297.3 206.0 L310.2 206.0 L323.1 206.0 L335.9 206.0 L348.8 206.0 L361.7 206.0 L374.5 206.0 L387.4 206.0 L400.3 206.0 L413.1 206.0 L426.0 206.0"/>
-<path class="art-line art-s-up" d="M40.0 22.3 L52.9 23.8 L65.7 24.9 L78.6 27.8 L91.5 31.9 L104.3 33.2 L117.2 37.4 L130.1 41.8 L142.9 47.4 L155.8 54.3 L168.7 61.4 L181.5 70.8 L194.4 80.6 L207.3 91.6 L220.1 106.2 L233.0 122.1 L245.9 137.1 L258.7 154.0 L271.6 169.7 L284.5 182.4 L297.3 189.3 L310.2 196.6 L323.1 201.6 L335.9 204.3 L348.8 205.4 L361.7 205.8 L374.5 206.0 L387.4 206.0 L400.3 206.0 L413.1 206.0 L426.0 206.0"/>
-<circle class="art-dot art-s-cp" cx="194.4" cy="142.6" r="4"/>
-<text class="art-annot" x="184.4" y="160.6" text-anchor="end">0.33 at 0.72 s</text>
-<g class="art-cross" aria-hidden="true"><line x1="0" x2="0" y1="14" y2="206"/></g>
-<rect class="art-hit" x="40" y="14" width="386" height="192" fill="transparent"/>
-</svg>
-          </div>
-          <div class="art-panel">
-            <h4>Pose error (cm)</h4>
-            <ul class="art-legend" aria-hidden="true"><li><span class="art-key art-key--line art-k-kp"></span>Mean keypoint error</li></ul>
-<svg class="art-chart" id="ew-pose" viewBox="0 0 440 250" role="img" aria-labelledby="ew-pose-t">
-<title id="ew-pose-t">Pose error in the last 1.2 seconds before a fall</title>
-<g class="art-grid">
-<line x1="40" x2="426" y1="206.0" y2="206.0"/>
-<line x1="40" x2="426" y1="151.1" y2="151.1"/>
-<line x1="40" x2="426" y1="96.3" y2="96.3"/>
-<line x1="40" x2="426" y1="41.4" y2="41.4"/>
-</g><g class="art-axis">
-<line class="art-base" x1="40" x2="426" y1="206" y2="206"/>
-<text x="32" y="210.0" text-anchor="end">0</text>
-<text x="32" y="155.1" text-anchor="end">10</text>
-<text x="32" y="100.3" text-anchor="end">20</text>
-<text x="32" y="45.4" text-anchor="end">30</text>
-<text x="40.0" y="224" text-anchor="middle">1.2</text>
-<text x="104.3" y="224" text-anchor="middle">1.0</text>
-<text x="168.7" y="224" text-anchor="middle">0.8</text>
-<text x="233.0" y="224" text-anchor="middle">0.6</text>
-<text x="297.3" y="224" text-anchor="middle">0.4</text>
-<text x="361.7" y="224" text-anchor="middle">0.2</text>
-<text x="426.0" y="224" text-anchor="middle">fall</text>
-<text x="233.0" y="246" text-anchor="middle">seconds before the fall</text>
-</g>
-<path class="art-line art-s-kp" d="M40.0 197.8 L52.9 197.2 L65.7 196.7 L78.6 195.6 L91.5 194.5 L104.3 193.9 L117.2 192.8 L130.1 192.3 L142.9 191.2 L155.8 189.5 L168.7 188.4 L181.5 186.8 L194.4 184.1 L207.3 181.9 L220.1 179.7 L233.0 176.9 L245.9 173.1 L258.7 169.2 L271.6 163.8 L284.5 158.3 L297.3 152.8 L310.2 146.2 L323.1 138.5 L335.9 130.3 L348.8 119.3 L361.7 108.9 L374.5 96.3 L387.4 83.1 L400.3 66.7 L413.1 46.4 L426.0 22.8"/>
-<circle class="art-dot art-s-kp" cx="194.4" cy="184.1" r="4"/>
-<text class="art-annot" x="186.4" y="172.1" text-anchor="end">4.0 cm at 0.72 s</text>
-<g class="art-cross" aria-hidden="true"><line x1="0" x2="0" y1="14" y2="206"/></g>
-<rect class="art-hit" x="40" y="14" width="386" height="192" fill="transparent"/>
-</svg>
-          </div>
-        </div>
-        <div class="art-tip" role="presentation"></div>
-      </div>
-      <figcaption>About 0.7 s before the fall the capture-point score has already dropped to 0.33, while the pose error is only 4.0 cm and the pelvis-tilt score is still 0.65. The policy gets told about a fall while there is still time to stop it.</figcaption>
-      <details class="art-details">
-        <summary>Show the numbers</summary>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Seconds before fall</th><th class="r">Capture point score</th><th class="r">Pelvis tilt score</th><th class="r">Capture point inside feet (cm)</th><th class="r">Pose error (cm)</th></tr></thead>
-            <tbody>
-<tr><td>1.20</td><td class="r">1.00</td><td class="r">0.96</td><td class="r">5.9</td><td class="r">1.5</td></tr>
-<tr><td>1.08</td><td class="r">1.00</td><td class="r">0.93</td><td class="r">4.7</td><td class="r">1.9</td></tr>
-<tr><td>0.96</td><td class="r">1.00</td><td class="r">0.88</td><td class="r">3.0</td><td class="r">2.4</td></tr>
-<tr><td>0.84</td><td class="r">0.93</td><td class="r">0.79</td><td class="r">0.9</td><td class="r">3.0</td></tr>
-<tr><td>0.72</td><td class="r">0.33</td><td class="r">0.65</td><td class="r">-2.2</td><td class="r">4.0</td></tr>
-<tr><td>0.60</td><td class="r">0.01</td><td class="r">0.44</td><td class="r">-6.8</td><td class="r">5.3</td></tr>
-<tr><td>0.48</td><td class="r">0.00</td><td class="r">0.19</td><td class="r">-13.5</td><td class="r">7.7</td></tr>
-<tr><td>0.36</td><td class="r">0.00</td><td class="r">0.05</td><td class="r">-22.7</td><td class="r">10.9</td></tr>
-<tr><td>0.24</td><td class="r">0.00</td><td class="r">0.00</td><td class="r">-35.1</td><td class="r">15.8</td></tr>
-<tr><td>0.12</td><td class="r">0.00</td><td class="r">0.00</td><td class="r">-52.4</td><td class="r">22.4</td></tr>
-<tr><td>0.00</td><td class="r">0.00</td><td class="r">0.00</td><td class="r">-71.6</td><td class="r">33.4</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
-    </figure>
 
     <div class="art-two" style="margin-top:48px">
       <div class="art-prose" style="margin-top:0">
@@ -406,8 +305,8 @@
       <p>§ 05 shows what these changes did over the whole first stage of training, 60 million steps.</p>
     </div>
 
-    <figure class="art-fig" id="fig-3">
-      <div class="art-fig-head"><span>Fig. 3 — the robot moving in simulation</span><span>MuJoCo</span></div>
+    <figure class="art-fig" id="fig-2">
+      <div class="art-fig-head"><span>Fig. 2 — the robot moving in simulation</span><span>MuJoCo</span></div>
       <div class="art-fig-body">
         <img class="art-gif" src="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/assets/output_record.gif" alt="Animation of the simulated Unitree G1 humanoid moving in the MuJoCo simulator" loading="lazy">
       </div>
@@ -421,7 +320,7 @@
       <div class="split-copy">
         <span class="sec-num">§ 05</span>
         <h2>Watching it learn</h2>
-        <p class="body-lg">A training run takes many hours, and the reward curve alone doesn’t say whether the robot is getting better at balancing. Every run therefore records the same fixed test episodes as it goes: survival per motion kind, pose error, and a short video, every 5 % of the run. A model backup is saved every 10 %, and a small script turns any backup into a GIF like Fig. 3.</p>
+        <p class="body-lg">A training run takes many hours, and the reward curve alone doesn’t say whether the robot is getting better at balancing. Every run therefore records the same fixed test episodes as it goes: survival per motion kind, pose error, and a short video, every 5 % of the run. A model backup is saved every 10 %, and a small script turns any backup into a GIF like Fig. 2.</p>
         <dl class="specs">
           <div><dt>Videos + test scores</dt><dd>every 5 %</dd></div>
           <div><dt>Model backups</dt><dd>every 10 %</dd></div>
@@ -448,7 +347,7 @@
 
     <div class="art-prose" id="stage-1">
       <h3>Stage 1: what the log says</h3>
-      <p>The first stage of training has finished: <span data-stat="steps_M">60</span> million steps, <span data-stat="hours">10.4</span> hours with 16 simulated robots. Fig. 4 is drawn straight from that run’s <code>progress.csv</code>. This page loads the file and plots it, and the numbers in this section are read from it too.</p>
+      <p>The first stage of training has finished: <span data-stat="steps_M">60</span> million steps, <span data-stat="hours">10.4</span> hours with 16 simulated robots. Fig. 3 is drawn straight from that run’s <code>progress.csv</code>. This page loads the file and plots it, and the numbers in this section are read from it too.</p>
     </div>
     <dl class="specs art-specs">
       <div><dt>Test survival, start → end</dt><dd><span data-stat="surv_first">13</span> % → <span data-stat="surv_last">89</span> %</dd></div>
@@ -457,8 +356,8 @@
       <div><dt>Pose error, 12 keypoints</dt><dd><span data-stat="kp_first">8.8</span> → <span data-stat="kp_end">5.6</span> cm</dd></div>
     </dl>
 
-    <figure class="art-fig art-progress" id="fig-4" data-progress-csv="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/logs/pose_stage1T1/progress.csv">
-      <div class="art-fig-head"><span>Fig. 4 — stage 1, read from progress.csv</span><span><span data-stat="steps_M">60</span>M steps · <span data-stat="tests">21</span> tests</span></div>
+    <figure class="art-fig art-progress" id="fig-3" data-progress-csv="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/logs/pose_stage1T1/progress.csv">
+      <div class="art-fig-head"><span>Fig. 3 — stage 1, read from progress.csv</span><span><span data-stat="steps_M">60</span>M steps · <span data-stat="tests">21</span> tests</span></div>
       <div class="art-fig-body" data-progress>
         <p class="art-status" data-role="status" role="status">Loading the training log…</p>
         <div class="art-panel">
@@ -700,7 +599,7 @@ mujoco.mj_setConst(m, d)</code></pre>
         <thead><tr><th>Numbers</th><th>Source</th><th>Kind</th></tr></thead>
         <tbody>
           <tr><td>Link masses, joint limits, foot contact points</td><td><code>g1_29dof.xml</code> (Unitree’s G1 model, from <a href="https://github.com/unitreerobotics/unitree_rl_gym">Unitree RL Gym</a>)</td><td>from file</td></tr>
-          <tr><td>Holding torques, centre-of-mass shifts, wrong-mass test, gravity feed-forward, Fig. 2</td><td>Our MuJoCo runs on <code>g1_29dof.xml</code> and our motion library (120 clips, 43 min)</td><td>measured in simulation</td></tr>
+          <tr><td>Holding torques, centre-of-mass shifts, wrong-mass test, gravity feed-forward</td><td>Our MuJoCo runs on <code>g1_29dof.xml</code> and our motion library (120 clips, 43 min)</td><td>measured in simulation</td></tr>
           <tr><td>Printed-mass estimate: volumes and areas</td><td>The G1 meshes referenced by <code>g1_29dof.xml</code></td><td>measured from geometry</td></tr>
           <tr><td>PLA and PETG density</td><td><a href="https://filament2print.com/en/pla/3454-prusament-pla.html">Prusament PLA</a> and <a href="https://filament2print.com/en/pet-petg-cpe/3427-prusament-petg-.html">Prusament PETG</a> product pages (ISO 1183)</td><td>published</td></tr>
           <tr><td>1.2 mm skin, infill levels shown</td><td>Our choice</td><td>assumption</td></tr>
@@ -710,7 +609,7 @@ mujoco.mj_setConst(m, d)</code></pre>
           <tr><td>Armature = rotor inertia × gear ratio²</td><td><a href="https://humanoid.guide/?p=19933">Humanoid.guide on gear ratios</a></td><td>published</td></tr>
           <tr><td>Joint PD gains (ankle 40 N·m/rad)</td><td><a href="https://github.com/unitreerobotics/unitree_rl_gym/blob/276801e46c5d433564f24658bac64f254b7d2d4b/deploy/deploy_mujoco/configs/g1.yaml">Unitree RL Gym G1 deploy config</a></td><td>published</td></tr>
           <tr><td>Reward weights, curriculum, PPO settings</td><td>Our training code (<a href="https://github.com/shepai/pose-to-biped">pose-to-biped</a>)</td><td>our design</td></tr>
-          <tr><td>Stage 1 results, Fig. 4</td><td><a href="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/logs/pose_stage1T1/progress.csv"><code>progress.csv</code></a> from our stage 1 run, loaded and plotted by this page</td><td>measured in training</td></tr>
+          <tr><td>Stage 1 results, Fig. 3</td><td><a href="https://raw.githubusercontent.com/shepai/pose-to-biped/refs/heads/main/logs/pose_stage1T1/progress.csv"><code>progress.csv</code></a> from our stage 1 run, loaded and plotted by this page</td><td>measured in training</td></tr>
           <tr class="muted"><td>OpenG1 printed masses, actuator masses and armature</td><td>Not measured yet</td><td>to come</td></tr>
         </tbody>
       </table>
@@ -727,7 +626,7 @@ mujoco.mj_setConst(m, d)</code></pre>
     <div class="art-two" style="margin-top:28px">
       <div class="art-prose" style="margin-top:0">
         <ul>
-          <li>Run stage 2 (pushes, varied floor friction, sensor noise) and add it to Fig. 4.</li>
+          <li>Run stage 2 (pushes, varied floor friction, sensor noise) and add it to Fig. 3.</li>
           <li>Replace the G1 model’s link masses with our own: slicer estimates first, weighed parts later.</li>
           <li>Work out the armature of our cycloidal actuators (rotor inertia × ratio²) and put it in the model.</li>
           <li>Add mass variation as a standard training option.</li>
@@ -812,10 +711,8 @@ mujoco.mj_setConst(m, d)</code></pre>
 </footer>
 
 <script>
-/* Hover/focus readouts for Fig. 1 and Fig. 2. Every value is also in the captions and tables. */
+/* Hover/focus readouts for Fig. 1. Every value is also in the caption. */
 (function () {
-  var EW = [{"t": 0.0, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 33.4, "cp_margin_cm": -71.6}, {"t": 0.04, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 29.1, "cp_margin_cm": -65.1}, {"t": 0.08, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 25.4, "cp_margin_cm": -58.6}, {"t": 0.12, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 22.4, "cp_margin_cm": -52.4}, {"t": 0.16, "r_cp": 0.0, "r_upright": 0.0, "kp_err_cm": 20.0, "cp_margin_cm": -46.1}, {"t": 0.2, "r_cp": 0.0, "r_upright": 0.001, "kp_err_cm": 17.7, "cp_margin_cm": -40.3}, {"t": 0.24, "r_cp": 0.0, "r_upright": 0.003, "kp_err_cm": 15.8, "cp_margin_cm": -35.1}, {"t": 0.28, "r_cp": 0.0, "r_upright": 0.009, "kp_err_cm": 13.8, "cp_margin_cm": -30.6}, {"t": 0.32, "r_cp": 0.0, "r_upright": 0.023, "kp_err_cm": 12.3, "cp_margin_cm": -26.5}, {"t": 0.36, "r_cp": 0.0, "r_upright": 0.049, "kp_err_cm": 10.9, "cp_margin_cm": -22.7}, {"t": 0.4, "r_cp": 0.0, "r_upright": 0.087, "kp_err_cm": 9.7, "cp_margin_cm": -19.1}, {"t": 0.44, "r_cp": 0.0, "r_upright": 0.123, "kp_err_cm": 8.7, "cp_margin_cm": -16.1}, {"t": 0.48, "r_cp": 0.0, "r_upright": 0.189, "kp_err_cm": 7.7, "cp_margin_cm": -13.5}, {"t": 0.52, "r_cp": 0.0, "r_upright": 0.271, "kp_err_cm": 6.7, "cp_margin_cm": -10.9}, {"t": 0.56, "r_cp": 0.001, "r_upright": 0.359, "kp_err_cm": 6.0, "cp_margin_cm": -8.8}, {"t": 0.6, "r_cp": 0.008, "r_upright": 0.437, "kp_err_cm": 5.3, "cp_margin_cm": -6.8}, {"t": 0.64, "r_cp": 0.045, "r_upright": 0.52, "kp_err_cm": 4.8, "cp_margin_cm": -5.1}, {"t": 0.68, "r_cp": 0.148, "r_upright": 0.596, "kp_err_cm": 4.4, "cp_margin_cm": -3.5}, {"t": 0.72, "r_cp": 0.33, "r_upright": 0.653, "kp_err_cm": 4.0, "cp_margin_cm": -2.2}, {"t": 0.76, "r_cp": 0.551, "r_upright": 0.704, "kp_err_cm": 3.5, "cp_margin_cm": -1.1}, {"t": 0.8, "r_cp": 0.765, "r_upright": 0.753, "kp_err_cm": 3.2, "cp_margin_cm": -0.1}, {"t": 0.84, "r_cp": 0.932, "r_upright": 0.79, "kp_err_cm": 3.0, "cp_margin_cm": 0.9}, {"t": 0.88, "r_cp": 0.994, "r_upright": 0.826, "kp_err_cm": 2.7, "cp_margin_cm": 1.7}, {"t": 0.92, "r_cp": 1.0, "r_upright": 0.855, "kp_err_cm": 2.5, "cp_margin_cm": 2.4}, {"t": 0.96, "r_cp": 1.0, "r_upright": 0.878, "kp_err_cm": 2.4, "cp_margin_cm": 3.0}, {"t": 1.0, "r_cp": 1.0, "r_upright": 0.9, "kp_err_cm": 2.2, "cp_margin_cm": 3.6}, {"t": 1.04, "r_cp": 1.0, "r_upright": 0.907, "kp_err_cm": 2.1, "cp_margin_cm": 4.2}, {"t": 1.08, "r_cp": 1.0, "r_upright": 0.928, "kp_err_cm": 1.9, "cp_margin_cm": 4.7}, {"t": 1.12, "r_cp": 1.0, "r_upright": 0.943, "kp_err_cm": 1.7, "cp_margin_cm": 5.1}, {"t": 1.16, "r_cp": 1.0, "r_upright": 0.949, "kp_err_cm": 1.6, "cp_margin_cm": 5.5}, {"t": 1.2, "r_cp": 1.0, "r_upright": 0.957, "kp_err_cm": 1.5, "cp_margin_cm": 5.9}];
-
   function showTip(tip, zone, x, y, rows) {
     while (tip.firstChild) tip.removeChild(tip.firstChild);
     rows.forEach(function (r) {
@@ -850,31 +747,6 @@ mujoco.mj_setConst(m, d)</code></pre>
       seg.addEventListener("pointerleave", function () { tip.classList.remove("on"); });
       seg.addEventListener("blur", function () { tip.classList.remove("on"); });
     });
-  });
-
-  /* Fig. 2: one crosshair across both panels, one readout for every series */
-  var wrap = document.querySelector("[data-ew]");
-  if (!wrap) return;
-  var body = wrap.parentNode, tip = body.querySelector(".art-tip");
-  var svgs = wrap.querySelectorAll("svg"), ML = 40, PW = 386, W = 440, TMAX = 1.2;
-  function nearest(t) { return EW.reduce(function (a, b) { return Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a; }); }
-  function hide() { tip.classList.remove("on"); svgs.forEach(function (s) { s.querySelector(".art-cross").classList.remove("on"); }); }
-  svgs.forEach(function (svg) {
-    var hit = svg.querySelector(".art-hit");
-    hit.addEventListener("pointermove", function (e) {
-      var r = svg.getBoundingClientRect(), sx = (e.clientX - r.left) * W / r.width;
-      var d = nearest(TMAX - (sx - ML) / PW * TMAX), x = ML + (TMAX - d.t) / TMAX * PW;
-      svgs.forEach(function (s) {
-        var c = s.querySelector(".art-cross"); c.classList.add("on");
-        c.setAttribute("transform", "translate(" + x + " 0)");
-      });
-      showTip(tip, body, e.clientX, e.clientY, [
-        { value: d.t.toFixed(2) + " s", label: "before the fall" },
-        { value: d.r_cp.toFixed(2), label: "capture point", color: "#b5391a" },
-        { value: d.r_upright.toFixed(2), label: "pelvis tilt", color: "#0a8f7c" },
-        { value: d.kp_err_cm.toFixed(1) + " cm", label: "pose error", color: "#2f4f9f" }]);
-    });
-    hit.addEventListener("pointerleave", hide);
   });
 })();
 </script>
