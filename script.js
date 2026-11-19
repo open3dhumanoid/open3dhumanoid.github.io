@@ -196,15 +196,53 @@
     }
   }
 
-  /* ---------- sign-up form (placeholder: no backend yet) ---------- */
+  /* ---------- sign-up form ---------- */
   function initSignup() {
     const form = document.querySelector('.signup');
     if (!form) return;
+
     const status = form.querySelector('.signup-status');
-    form.addEventListener('submit', (event) => {
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    const publicKey = 'sb_publishable_w4Y1k9-b3Mm-xp3ZYEZovw_4Dm6-4ys'
+    const url = 'https://hktfojsaclokomuwnraf.supabase.co/functions/v1/email-sender'
+
+    form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (status) status.textContent = 'Lorem ipsum dolor sit amet.';
-      form.reset();
+
+      const email = new FormData(form).get('email');
+
+      if (typeof email !== 'string' || !email.trim()) {
+        if (status) status.textContent = 'Please enter a valid email address.';
+        return;
+      }
+
+      if (status) status.textContent = 'Sending...';
+      if (submitButton) submitButton.disabled = true;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicKey}`,
+            apikey: publicKey
+          },
+          body: JSON.stringify({ email: email.trim() })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Signup request failed with status ${response.status}`);
+        }
+
+        if (status) status.textContent = 'Successfully signed up, thanks for joining.';
+        form.reset();
+      } catch (error) {
+        console.error('Unable to send signup email:', error);
+        if (status) status.textContent = 'Email not sent, it is possible you have already signed up.';
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
     });
   }
 
