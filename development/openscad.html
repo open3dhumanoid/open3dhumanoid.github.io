@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Design files and parts — OpenG1</title>
-  <meta name="description" content="How the OpenG1 OpenSCAD files work, what was changed from the original Unitree G1 meshes, every part you need, and how it all fits together.">
+  <meta name="description" content="How the OpenG1 design files are organised, what was changed from the original Unitree G1 meshes, every part you need, and how it all fits together.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech&amp;family=Share+Tech+Mono&amp;display=swap">
@@ -52,7 +52,7 @@
   <section class="page-intro container">
     <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Build guide G.02 — design files · status: draft</p>
     <h1 class="page-title">The design files</h1>
-    <p class="lede">Every part of OpenG1 starts from the Unitree G1's own meshes. The OpenSCAD files cut pockets for the actuators, add a frame where the printer needs one, and keep the outside shape. This guide shows how the files are organised, what was changed from the originals, every part you need, and how it all goes together.</p>
+    <p class="lede">Every part of OpenG1 starts from the Unitree G1's own meshes. Pockets are cut for the actuators and a frame is added where the printer needs one, while the outside shape stays the G1's. This guide shows how the files are organised, what was changed from the originals, every part you need, and how it all goes together.</p>
   </section>
 
   <!-- ============ § 01 — The robot in one file ============ -->
@@ -64,19 +64,19 @@
     </header>
     <div class="split">
       <figure class="fig fig--tall">
-        <img src="https://open3dhumanoid.github.io/assets/img/openscad/robot_full.png" alt="Render of the whole OpenG1 robot: dome head, framed torso, servo arms with rubber hands, waist joint and printed legs" loading="lazy">
-        <figcaption><span>Fig. 1 — assembly.scad</span><span>arms and legs posed</span></figcaption>
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/robot_layout.png" alt="Front and side layout of the whole OpenG1 robot as loaded by robot_assembly.scad: head, framed torso, servo arms, pelvis and legs, feet on the floor" loading="lazy">
+        <figcaption><span>Fig. 1 — robot_assembly.scad</span><span>zero pose, front and side</span></figcaption>
       </figure>
       <div class="split-copy">
-        <h2>Open it, pose it, export it</h2>
-        <p class="body-lg"><code>OpenScad/assembly/assembly.scad</code> loads every part of the robot in the G1's torso frame and poses it with the G1's own joint angles. Change the numbers at the top of the file and press F5. Every printable part also has its own file, which you open, render with F6 and export as an STL.</p>
+        <h2>Open it, pose it</h2>
+        <p class="body-lg"><code>STL/robot_assembly.scad</code> loads every printed part of the robot and poses it with the G1's own joint chain, starting from the pelvis, with the feet on the floor at the zero pose. Open it in OpenSCAD, press F5 and move the joints with the sliders in the Customizer (Window → Customizer). <code>STL/arms/arm_assembly.scad</code> does the same for the two arms on their own.</p>
         <dl class="specs">
-          <div><dt><code>qL</code>, <code>qR</code></dt><dd>arms, 7 angles each: shoulder pitch, roll, yaw, elbow, wrist roll, pitch, yaw</dd></div>
-          <div><dt><code>qLegL</code>, <code>qLegR</code></dt><dd>legs, 4 angles each: hip pitch, hip roll, hip yaw, knee</dd></div>
-          <div><dt><code>qWaist</code></dt><dd>waist yaw, turns the torso on the pelvis</dd></div>
-          <div><dt><code>torso_style</code></dt><dd><code>"framed"</code> (aluminium frame + panels) or <code>"solid"</code> (old one-piece torso)</dd></div>
-          <div><dt>Angles</dt><dd>degrees, same signs as the G1 URDF on both sides</dd></div>
-          <div><dt>OpenSCAD</dt><dd>2024 or newer, with the Manifold backend for F6</dd></div>
+          <div><dt>Arms</dt><dd><code>l_…</code>, <code>r_…</code>: shoulder pitch, roll, yaw, elbow, wrist roll, pitch, yaw</dd></div>
+          <div><dt>Legs</dt><dd><code>l_…</code>, <code>r_…</code>: hip pitch, roll, yaw, knee, ankle pitch, ankle roll</dd></div>
+          <div><dt>Waist</dt><dd><code>waist_yaw</code>, <code>waist_roll</code>, <code>waist_pitch</code></dd></div>
+          <div><dt>Display</dt><dd>show or hide each arm, the legs, torso, head and the arm actuators; see-through arm links</dd></div>
+          <div><dt>Variants</dt><dd><code>knee_variant</code> (<code>"ankle"</code> or <code>"integrated"</code>), <code>pelvis_variant</code> (<code>"waist"</code> or <code>"integrated"</code>)</dd></div>
+          <div><dt>Angles</dt><dd>degrees, same signs as the G1 URDF, limited to the G1 ranges</dd></div>
         </dl>
       </div>
     </div>
@@ -88,29 +88,28 @@
       <div class="split-copy">
         <span class="sec-num">§ 02</span>
         <h2>How the files are organised</h2>
-        <p class="body-lg">The repository has two halves. <code>OpenScad/</code> holds the files you open; <code>STL/</code> holds the meshes they load. Each file you open sits exactly one folder below <code>OpenScad/</code>, and every mesh path is written as <code>../../STL/…</code> from there. That is why the folders must stay as they are. If OpenSCAD can't find a mesh, it prints a warning in the console and shows an empty view.</p>
-        <p class="body-lg">Shared code lives in <code>OpenScad/lib/</code>. <code>g1_servo_arm.scad</code> has every arm and shoulder joint, <code>torso_frame_lib.scad</code> the frame and torso panels, and <code>legs_lib.scad</code> the pelvis, legs and waist. The part files and the assembly include them.</p>
+        <p class="body-lg">Everything is in <code>STL/</code>. The assemblies load the meshes by relative path, so keep <code>robot_assembly.scad</code> in <code>STL/</code> and <code>arm_assembly.scad</code> in <code>STL/arms/</code>. If OpenSCAD can't find a mesh, it prints a warning in the console and leaves that part out.</p>
+        <p class="body-lg">Each side's arm folder has the seven edited links in <code>links/</code> and one folder per joint in <code>actuators/</code> with that joint's cartridge, cap, horn plate and idler pin. The actuator parts are saved lying flat, ready to print. The links stay in their G1 frame, so orient them in the slicer.</p>
         <dl class="specs">
-          <div><dt>Open from</dt><dd>the file's own folder (File → Open)</dd></div>
-          <div><dt>Units</dt><dd>mm, in each part's G1 link frame</dd></div>
-          <div><dt>Printable parts</dt><dd>arm parts from <code>parts_left/</code>, <code>parts_right/</code>, <code>hardware/</code>; the rest are ready-made STLs</dd></div>
+          <div><dt>Units</dt><dd>mm. Exception: the stock reference meshes in <code>legs/feet/</code>, <code>torso/</code> and <code>torso_waist_parts_unmodified/</code> are in metres, like the original G1 files</dd></div>
+          <div><dt>Arm details</dt><dd><code>STL/arms/README.md</code>: parts list, print settings, assembly steps for each joint</dd></div>
+          <div><dt>Hip yaw</dt><dd><code>STL/legs/HIP_YAW.md</code></dd></div>
         </dl>
       </div>
       <div class="printout">
         <div class="sprockets" aria-hidden="true"></div>
         <div class="print-body">
-          <div class="pl pl--muted">**** OpenScad/ ****</div>
-          <div class="pl"><span class="ln">0010</span><span>assembly/   whole robot, posable</span></div>
-          <div class="pl"><span class="ln">0020</span><span>parts_left/ parts_right/   arm parts</span></div>
-          <div class="pl"><span class="ln">0030</span><span>hardware/   servo hubs, idler pins</span></div>
-          <div class="pl"><span class="ln">0040</span><span>torso_frame/   frame + torso panels</span></div>
-          <div class="pl"><span class="ln">0050</span><span>head/   dome head, D455</span></div>
-          <div class="pl"><span class="ln">0060</span><span>legs/   pelvis, legs, waist/</span></div>
-          <div class="pl"><span class="ln">0070</span><span>generator/   design.py, emit.py</span></div>
-          <div class="pl"><span class="ln">0080</span><span>lib/   shared modules</span></div>
           <div class="pl pl--muted">**** STL/ ****</div>
-          <div class="pl"><span class="ln">0090</span><span>arms/  torso/  torso_frame/</span></div>
-          <div class="pl"><span class="ln">0100</span><span>head/  legs/  legs/actuator/</span></div>
+          <div class="pl"><span class="ln">0010</span><span>robot_assembly.scad   whole robot, posable</span></div>
+          <div class="pl"><span class="ln">0020</span><span>arms/   arm_assembly.scad, README</span></div>
+          <div class="pl"><span class="ln">0030</span><span>arms/left/ arms/right/   links/, actuators/</span></div>
+          <div class="pl"><span class="ln">0040</span><span>arms/fit_tests/   print these first</span></div>
+          <div class="pl"><span class="ln">0050</span><span>arms/generator/   design.py, build.py</span></div>
+          <div class="pl"><span class="ln">0060</span><span>legs/   pelvis, legs, waist, hip yaw</span></div>
+          <div class="pl"><span class="ln">0070</span><span>legs/actuator/   6512 actuator</span></div>
+          <div class="pl"><span class="ln">0080</span><span>torso_frame/   frame + panels</span></div>
+          <div class="pl"><span class="ln">0090</span><span>head/   dome head, panels, brows</span></div>
+          <div class="pl"><span class="ln">0100</span><span>torso/  torso_waist_parts_unmodified/</span></div>
           <div class="pl pl--muted">**** End of listing ****</div>
         </div>
         <div class="sprockets sprockets--right" aria-hidden="true"></div>
@@ -126,22 +125,20 @@
       <span class="page-num">— 03 / 08 —</span>
     </header>
     <div class="section-intro">
-      <p class="body-lg">No part is drawn by hand twice. Each subsystem has one Python script that holds every dimension, writes the OpenSCAD or STL files, and checks the result: actuators inside their links, walls at least 3 mm, joints swept through their G1 ranges, parts removable in their assembly order. Change the parameters and run the script again.</p>
-      <span class="meta">5 generators</span>
+      <p class="body-lg">The arm and hip-yaw parts are generated in Python, not drawn by hand. The script holds every dimension, cuts the stock G1 mesh, writes clean STLs and checks the result. Change the parameters and run it again. Each mesh is turned into a distance field, combined with the new features, rebuilt as a surface and simplified to within 0.02 mm. Every file comes out watertight, in one piece, at 10–80 k triangles.</p>
+      <span class="meta">2 generators in the repo</span>
     </div>
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr><th>Subsystem</th><th>Edit</th><th>Run</th><th>Writes</th></tr></thead>
         <tbody>
-          <tr><td>Arm and shoulder joints</td><td><code>generator/design.py</code></td><td><code>emit.py</code></td><td><code>lib/g1_servo_arm.scad</code>, <code>assembly.scad</code></td></tr>
-          <tr><td>Framed torso</td><td><code>torso_frame/generator/layout.py</code></td><td>7 short scripts, about 7 min</td><td><code>STL/torso_frame/</code>, <code>torso_frame.scad</code></td></tr>
-          <tr><td>Left leg and pelvis</td><td><code>legs/integrate_leg.py</code></td><td>same</td><td><code>STL/legs/left_*</code>, pelvis halves</td></tr>
-          <tr><td>Right leg</td><td>—</td><td><code>legs/mirror_right.py</code></td><td><code>STL/legs/right_*</code></td></tr>
-          <tr><td>Waist yaw</td><td><code>legs/waist/gen_waist.py</code></td><td>then <code>check_waist.py</code></td><td>pelvis with waist pocket, carrier, waist link</td></tr>
+          <tr><td>Arm links and servo actuators</td><td><code>arms/generator/design.py</code></td><td><code>run_parts.py</code>, <code>run_links.py</code>, then <code>check.py</code></td><td>links, cartridges, caps, horn plates, idler pins (left and right)</td></tr>
+          <tr><td>Arm assembly</td><td>—</td><td><code>make_scad.py</code></td><td><code>arms/arm_assembly.scad</code></td></tr>
+          <tr><td>Hip yaw actuator</td><td><code>legs/hipyaw_generator.py</code></td><td>same file</td><td><code>legs/*_hip_roll_link_integrated_yaw.stl</code>, <code>*_hip_yaw_link_knee_integrated_yaw.stl</code></td></tr>
         </tbody>
       </table>
     </div>
-    <p class="note">The parametric leg file <code>legs/g1_leg_actuators.scad</code> builds the same leg, pelvis and waist parts in OpenSCAD itself, and also adds the hip yaw actuator. It needs the cleaned G1 meshes in <code>STL/legs/stock/</code>.</p>
+    <p class="note">The arm generator needs Python with numpy, scipy and scikit-image, and a C++ compiler for its small geometry library (<code>g++ -O3 -shared -fPIC -o libgeom.so geom.cpp</code>). The torso frame, pelvis, legs and waist were generated by earlier scripts that aren't in this repository. Their STLs are provided ready-made.</p>
   </section>
 
   <!-- ============ § 04 — What changed from the originals ============ -->
@@ -152,28 +149,36 @@
       <span class="page-num">— 04 / 08 —</span>
     </header>
     <div class="section-intro">
-      <p class="body-lg">The rule throughout is to cut, not add. The outside of every link keeps the G1 shape. Material is only added where a wall around an actuator would be thinner than 3 mm, and it stays inside the original outline. Where a pocket opens to the outside, the piece that was removed comes back as a hatch that screws on.</p>
+      <p class="body-lg">The rule throughout is to cut, not add. The outside of every link keeps the G1 shape. The only visible changes are screw holes, cable exits, and faces hidden under a neighbouring link that are trimmed 0.3–0.4 mm so joints don't rub. Material is only added where a G1 part was too thin to hold anything, and it stays inside the original outline.</p>
       <span class="meta">Every link checked</span>
     </div>
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr><th>Part</th><th>Original</th><th>What changed</th><th>Why</th></tr></thead>
         <tbody>
-          <tr><td>Arm links (7 per arm)</td><td>G1 arm STLs, imported unchanged</td><td>Servo pocket, screw-on hatch, hex socket for the output hub, radial retaining screws. The wrist covers get bosses inside, clipped to the cover. The rubber hand is trimmed and fixed after wrist yaw.</td><td>A hobby servo in every arm joint, 7 joints per arm</td></tr>
-          <tr><td>Shoulder roll link</td><td>G1 STL</td><td>Three tiny bow-tie mesh errors separated</td><td>The original wasn't a clean solid</td></tr>
-          <tr><td>Torso</td><td><code>torso_link_rev_1_0</code>, one 150 × 215 × 320 mm solid</td><td>Hollowed to a 3 mm skin and split into 10 printed parts on a 2020 frame. The outside follows the original to within 0.05 mm on 94–95 % of the panel surface. Shoulder blocks keep the shoulder-pitch servo pockets.</td><td>Fits a 220 × 220 × 250 mm bed, room for electronics</td></tr>
-          <tr><td>Head</td><td>G1 <code>head_link</code></td><td>Stock collar kept below 372 mm; a 250 mm dome with the D455, five removable panels and two servo-driven brows above it; four heat-set inserts for the neck</td><td>Depth camera and a face</td></tr>
-          <tr><td>Pelvis</td><td>G1 <code>pelvis</code></td><td>Hip-pitch actuator pockets, split into two halves on the centre plane, and a waist-yaw pocket in the top disc with a drop-in stator carrier</td><td>Three 6512 actuators in one part</td></tr>
+          <tr><td>Arm links (7 per arm)</td><td>G1 arm STLs</td><td>A pocket in each link for a servo cartridge that screws in with M3 heat-set inserts. The driven link gets screw holes into the horn plate, a horn-shaped pocket, or a hex socket. Yoke joints get an idler-pin hole for the bearing on the back of the actuator. Each link has a cable channel.</td><td>A hobby servo in every arm joint. Servos can be swapped without reprinting links.</td></tr>
+          <tr><td>Wrist roll and wrist yaw links</td><td>Thin 1.5 mm G1 shells</td><td>Ears thickened inwards to flat faces, inside the original outline; wrist-roll base thickened to 5.5 mm</td><td>Somewhere to hold the horn-plate screws and the idler pin</td></tr>
+          <tr><td>Shoulder pitch link</td><td>G1 STL</td><td>Hex socket and two radial M3 screws on its inner face for the shoulder-pitch horn hub; side faces under the roll yoke trimmed flat</td><td>Mates with the servo in the torso shoulder block, as on the G1</td></tr>
+          <tr><td>Upper arm (shoulder yaw link)</td><td>G1 STL, two overlapping shells</td><td>Merged into one solid; the cup round the roll link bored 0.35 mm larger</td><td>The original touched the roll link with zero gap</td></tr>
+          <tr><td>Torso</td><td><code>torso_link_rev_1_0</code>, one 150 × 215 × 320 mm solid</td><td>Hollowed to a 3 mm skin and split into 10 printed parts on a 2020 frame. Shoulder blocks keep the shoulder-pitch servo pockets.</td><td>Fits a 220 × 220 × 250 mm bed, room for electronics</td></tr>
+          <tr><td>Head</td><td>G1 <code>head_link</code></td><td>A dome with the D455, five removable panels and two brows on the stock collar</td><td>Depth camera and a face</td></tr>
+          <tr><td>Pelvis</td><td>G1 <code>pelvis</code></td><td>Hip-pitch actuator pockets, split into two halves on the centre plane, waist-yaw pocket with a drop-in stator carrier</td><td>Three 6512 actuators in one part</td></tr>
           <tr><td>Hip pitch, hip roll, thigh, shin</td><td>G1 left-leg STLs</td><td>Parent link becomes the actuator housing; child link bolts to the output. Right leg = left mirrored in y</td><td>6512 at hip pitch, hip roll and knee</td></tr>
-          <tr><td>Waist yaw link</td><td>G1 <code>waist_yaw_link_rev_1_0</code></td><td>Roll/pitch lugs removed, riser up to the torso plate, output boss and torso inserts</td><td>23-DoF G1 locks waist roll and pitch</td></tr>
+          <tr><td>Hip roll link + thigh (new <code>_yaw</code> files)</td><td>The leg STLs above</td><td>Ø70.5 × 32.5 mm pocket in the bottom of the hip roll link for a 6512 on the yaw axis, with 12 M3 inserts in its floor. 6 M3 inserts in the top of the thigh for the output shaft. A wire channel. 0.4 mm running gap. The thigh's non-manifold edges were fixed.</td><td>Hip yaw was the one leg joint without an actuator</td></tr>
+          <tr><td>Waist yaw link</td><td>G1 <code>waist_yaw_link_rev_1_0</code></td><td>Roll/pitch lugs removed, riser up to the torso plate, output boss and torso inserts</td><td>Waist roll and pitch are locked</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="fig-grid">
+    <div class="fig-grid fig-grid--2">
       <figure class="fig">
-        <img src="https://open3dhumanoid.github.io/assets/img/openscad/arm_hatches.png" alt="Eight arm and shoulder links, each with its blue screw-on hatch pulled away to show the servo pocket" loading="lazy">
-        <figcaption><span>Fig. 2 — servo pockets and hatches</span><span>blue = hatch or cover</span></figcaption>
-        <p>Each joint's hatch pulled out to show the pocket behind it. These come from the voxel check model, which is why the surfaces look stepped; the printed parts keep the original surface.</p>
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/arm_cutaway.png" alt="Left arm cut in half showing the shoulder-roll cartridge in the shoulder pitch link, the shoulder-yaw cartridge in the roll link and the elbow cartridge in the upper arm" loading="lazy">
+        <figcaption><span>Fig. 2 — left arm, cut open</span><span>orange = cartridge</span></figcaption>
+        <p>The servo cartridges sitting inside the links. Orange is the cartridge, blue the cap, green the horn plate and pink the idler pin. The outside surface of the links is unchanged.</p>
+      </figure>
+      <figure class="fig">
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/hip_yaw.png" alt="Hip roll link seen from below with the new 70 mm actuator pocket, the thigh top with its insert holes, and sections through both" loading="lazy">
+        <figcaption><span>Fig. 3 — hip yaw</span><span>black = hip roll link, red = thigh</span></figcaption>
+        <p>The new hip-yaw pocket in the bottom of the hip roll link, and the output mount on top of the thigh.</p>
       </figure>
     </div>
   </section>
@@ -187,42 +192,48 @@
     </header>
     <div class="split">
       <figure class="fig fig--tall">
-        <img src="https://open3dhumanoid.github.io/assets/img/openscad/robot_exploded.png" alt="Exploded view of OpenG1: head lifted off, torso panels and shoulder blocks pulled away from the aluminium frame, arms out to the sides, pelvis halves apart with the actuators visible, legs separated at each joint" loading="lazy">
-        <figcaption><span>Fig. 3 — exploded</span><span>orange = 6512 actuators</span></figcaption>
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/arms_posed.png" alt="Both OpenG1 arms posed, with the servo cartridges, caps, horn plates and idler pins in place" loading="lazy">
+        <figcaption><span>Fig. 4 — both arms</span><span>arm_assembly.scad</span></figcaption>
       </figure>
       <div class="split-copy">
         <h2>From the pelvis up</h2>
-        <p class="body-lg">The pelvis is the base. It holds both hip-pitch actuators and the waist-yaw actuator, and each leg hangs from it joint by joint. The waist yaw link bolts onto the waist output and carries the torso. The torso is an aluminium frame: the shoulder blocks and top panel bolt onto its crossbars, the front and back panels close it, and the head bolts to the top panel. Each arm starts at the servo in its shoulder block.</p>
+        <p class="body-lg">The pelvis is the base. It holds both hip-pitch actuators and the waist-yaw actuator, and each leg hangs from it joint by joint. The waist yaw link carries the torso, an aluminium frame with printed panels. The head bolts to the top panel. Each arm starts at the standard servo in its shoulder block, which drives the shoulder pitch link through a horn hub, as on the G1.</p>
         <dl class="specs">
-          <div><dt>Leg chain</dt><dd>pelvis → hip pitch link → hip roll link → thigh → shin</dd></div>
+          <div><dt>Leg chain</dt><dd>pelvis → hip pitch → hip roll → (hip yaw) thigh → shin → stock ankle and foot</dd></div>
           <div><dt>Waist</dt><dd>pelvis → waist yaw link → torso bottom plate</dd></div>
-          <div><dt>Torso</dt><dd>4 posts, 2 crossbars, 4 side rails, 10 printed parts</dd></div>
-          <div><dt>Arm chain</dt><dd>shoulder block → pitch → roll → yaw → elbow → wrist roll → wrist pitch → wrist yaw + hand</dd></div>
-          <div><dt>Head</dt><dd>4 × M3 up through the top panel into the collar</dd></div>
+          <div><dt>Arm chain</dt><dd>shoulder block → pitch → roll → yaw → elbow → wrist roll → wrist pitch → wrist yaw</dd></div>
+          <div><dt>Arm actuator</dt><dd>a cartridge holding the servo, screwed into the link; the servo's plastic cross horn sits in a horn-shaped pocket</dd></div>
         </dl>
       </div>
     </div>
 
+    <h3>The seven arm joints</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Joint</th><th>Servo, and where it sits</th><th>How it is mounted</th><th>Bearing</th></tr></thead>
+        <tbody>
+          <tr><td>Shoulder pitch</td><td>Standard 40×20, in the torso shoulder block</td><td>Horn hub on the servo; hex socket and 2 radial screws in the pitch link</td><td>—</td></tr>
+          <tr><td>Shoulder roll</td><td>Standard 40×20, 35 kg·cm, in the shoulder pitch link</td><td>Yoke. Cartridge slides in from the back, flange screwed on; drive ear screwed to the horn plate</td><td>6803 in the back cap, idler pin through the other ear</td></tr>
+          <tr><td>Shoulder yaw</td><td>Micro 23×12, in the roll-link cylinder</td><td>Cartridge slides in from below, 2 screws down from the top of the yoke; keyed horn plate, 2 radial screws into the upper arm</td><td>6805 round the horn plate</td></tr>
+          <tr><td>Elbow</td><td>Standard 40×20, in the upper-arm lobe</td><td>Cartridge from the front under a countersunk ring; the horn screws straight into a pocket in the elbow disc</td><td>servo's own</td></tr>
+          <tr><td>Wrist roll</td><td>Micro 23×12, in the forearm end</td><td>Cartridge from the front with a bearing cap; 4 screws from inside the wrist cup into the horn plate</td><td>6805 round the horn plate</td></tr>
+          <tr><td>Wrist pitch</td><td>Micro 23×12, in lobe 1 of the wrist pitch link</td><td>Yoke, as shoulder roll</td><td>6803 in the back cap, press-fit idler pin</td></tr>
+          <tr><td>Wrist yaw</td><td>Micro 23×12, in lobe 2 of the wrist pitch link</td><td>Yoke, as shoulder roll</td><td>6803 in the back cap, press-fit idler pin</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">A standard servo's spline sits about 10 mm from one end, so it needs about a 64 mm circle round the joint axis. Only the shoulder roll and elbow positions have that much room inside the G1 outline. The other four arm joints use micro servos with their plastic mounting ears snipped off.</p>
+
     <div class="fig-grid fig-grid--2">
       <figure class="fig">
-        <img src="https://open3dhumanoid.github.io/assets/img/openscad/torso_inside.png" alt="Torso with the front panel removed, showing the aluminium frame, the driver tray at the front, the compute tray at the back, the bottom plate and the waist riser" loading="lazy">
-        <figcaption><span>Fig. 4 — torso, front panel off</span><span>frame, trays, waist riser</span></figcaption>
-        <p>The front panel lifts off forwards and the back panel backwards. The driver tray (purple) and compute tray (green) bolt to the posts, with about 55 mm between them for boards.</p>
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/arm_joints_exploded.png" alt="Each arm joint's parts pulled apart along the joint axis: cartridge, servo, cap, horn plate and idler pin" loading="lazy">
+        <figcaption><span>Fig. 5 — each joint pulled apart</span><span>dark grey = servo</span></figcaption>
+        <p>Every joint's parts pulled apart along its axis, in the order they go together.</p>
       </figure>
       <figure class="fig">
-        <img src="https://open3dhumanoid.github.io/assets/img/openscad/torso_frame_trays.png" alt="The aluminium torso frame on its own with the two electronics trays and the blue bottom plate" loading="lazy">
-        <figcaption><span>Fig. 5 — the frame</span><span>2020 extrusion, 1.22 m</span></figcaption>
-        <p>Four posts screw into the bottom plate, which sits on the waist riser. The shoulder blocks and top panel bolt onto the two crossbars.</p>
-      </figure>
-      <figure class="fig">
-        <img src="https://open3dhumanoid.github.io/assets/img/openscad/waist_cutaway.png" alt="Cutaway of the right pelvis half showing the waist actuator in the pelvis top, the stator carrier below it, the waist yaw link and riser above, and a hip actuator lower down" loading="lazy">
-        <figcaption><span>Fig. 6 — waist joint, cut open</span><span>right pelvis half</span></figcaption>
-        <p>The waist actuator sits in the pelvis top with its output facing up. The stator screws to a separate carrier (gold) that drops into the bottom of the pocket, because there's no way to reach behind a fixed floor inside the solid pelvis. The hip-pitch stator floor is lower down.</p>
-      </figure>
-      <figure class="fig">
-        <img src="https://open3dhumanoid.github.io/assets/img/openscad/legs_exploded.png" alt="Pelvis halves apart with the waist actuator and carrier above them, and both legs separated at each joint showing the hip and knee actuators" loading="lazy">
-        <figcaption><span>Fig. 7 — pelvis and legs</span><span>right = left mirrored</span></figcaption>
-        <p>The right leg is the left leg mirrored. Unitree's own right-leg meshes are exact mirrors of the left (to within 0.1 mm), and the actuator bolt patterns are evenly spaced, so the same unmirrored actuator fits both sides.</p>
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/arm_actuators.png" alt="Only the actuator parts of the left arm, shown in their positions in the arm" loading="lazy">
+        <figcaption><span>Fig. 6 — actuator parts only</span><span>left arm</span></figcaption>
+        <p>The left arm's actuator parts in their places, with the links hidden.</p>
       </figure>
     </div>
   </section>
@@ -235,7 +246,7 @@
       <span class="page-num">— 06 / 08 —</span>
     </header>
     <div class="section-intro">
-      <p class="body-lg">Quantities for the whole robot as the files stand: legs with actuators at hip pitch, hip roll and knee, the waist, torso, head and both arms. Ankles and feet aren't designed yet. Screw lengths for each joint are in the README of each subsystem.</p>
+      <p class="body-lg">Quantities for the whole robot as the files stand: legs with actuators at hip pitch, hip roll, hip yaw and knee, the waist, torso, head and both arms. The ankles and feet are still the stock G1 parts. Screw lengths for each arm joint are in <code>STL/arms/README.md</code>.</p>
       <span class="meta">Draft, not yet built</span>
     </div>
 
@@ -244,14 +255,16 @@
       <table class="data-table">
         <thead><tr><th>Item</th><th>Where</th><th class="r">Qty</th></tr></thead>
         <tbody>
-          <tr><td>6512 printed cycloidal actuator (motor, B-G431B-ESC1, AS5600, bearings)</td><td>hip pitch, hip roll, knee × 2; waist yaw</td><td class="r">7</td></tr>
-          <tr class="muted"><td>… plus hip yaw, once the leg STLs include it</td><td>hip yaw × 2</td><td class="r">+2</td></tr>
-          <tr><td>DS3235 servo, 270° version</td><td>shoulder pitch, shoulder roll</td><td class="r">4</td></tr>
-          <tr><td>KST X10 Pro servo</td><td>shoulder yaw, elbow</td><td class="r">4</td></tr>
-          <tr><td>TowerPro MG92B servo</td><td>wrist roll, pitch, yaw</td><td class="r">6</td></tr>
+          <tr><td>6512 printed cycloidal actuator (motor, B-G431B-ESC1, AS5600, bearings)</td><td>hip pitch, hip roll, hip yaw, knee × 2; waist yaw</td><td class="r">9</td></tr>
+          <tr><td>Standard 40×20 servo, 35 kg·cm (DS3235)</td><td>shoulder pitch, shoulder roll</td><td class="r">4</td></tr>
+          <tr><td>Standard 40×20 servo, 20–35 kg·cm (DS3218 or DS3235)</td><td>elbow</td><td class="r">2</td></tr>
+          <tr><td>Micro 23×12 servo, metal gear, strongest available (5 kg·cm or more)</td><td>shoulder yaw</td><td class="r">2</td></tr>
+          <tr><td>Micro 23×12 servo (MG90S / MG92B)</td><td>wrist roll, pitch, yaw</td><td class="r">6</td></tr>
           <tr><td>SG90 micro servo</td><td>brows</td><td class="r">2</td></tr>
-          <tr><td>Round metal servo horns</td><td>arm and shoulder servos</td><td class="r">14</td></tr>
-          <tr><td>16-channel servo driver (e.g. PCA9685)</td><td>14 arm/shoulder servos + 2 brows</td><td class="r">1</td></tr>
+          <tr><td>Plastic cross horns (supplied with the servos)</td><td>every arm servo</td><td class="r">14</td></tr>
+          <tr><td>6803-2RS bearing, 17 × 26 × 5</td><td>shoulder roll, wrist pitch, wrist yaw idlers</td><td class="r">6</td></tr>
+          <tr><td>6805-2RS bearing, 25 × 37 × 7</td><td>shoulder yaw, wrist roll</td><td class="r">4</td></tr>
+          <tr><td>16-channel servo driver (e.g. PCA9685)</td><td>14 arm servos + 2 brows</td><td class="r">1</td></tr>
           <tr><td>Intel RealSense D455</td><td>head</td><td class="r">1</td></tr>
           <tr><td>Compute board (Raspberry Pi 5 or 86 mm-hole board such as Jetson Orin Nano)</td><td>compute tray</td><td class="r">1</td></tr>
         </tbody>
@@ -263,15 +276,16 @@
       <table class="data-table">
         <thead><tr><th>Group</th><th>Parts</th><th class="r">Count</th></tr></thead>
         <tbody>
-          <tr><td>Arms</td><td>7 links per arm with their hatches and wrist covers (17 files per side)</td><td class="r">34</td></tr>
-          <tr><td>Servo hardware</td><td>hubs: DS3235 × 4, X10 Pro × 4, MG92B × 6; idler pins × 4</td><td class="r">18</td></tr>
-          <tr><td>Torso</td><td>front, back and top panels; 2 shoulder blocks + hatches; bottom plate; compute and driver trays</td><td class="r">10</td></tr>
+          <tr><td>Arm links</td><td>7 per arm</td><td class="r">14</td></tr>
+          <tr><td>Arm actuator parts</td><td>per arm: 6 cartridges, 5 caps or back caps, 5 horn plates, 3 idler pins, 1 shoulder-pitch horn hub</td><td class="r">40</td></tr>
+          <tr><td>Fit tests</td><td>bearing seats, pins and inserts; servo pockets</td><td class="r">2</td></tr>
+          <tr><td>Torso</td><td>front, back and top panels; 2 hatches; 2 shoulder blocks; bottom plate; compute and driver trays</td><td class="r">10</td></tr>
           <tr><td>Head</td><td>frame, 5 panels, 2 brows</td><td class="r">8</td></tr>
           <tr><td>Pelvis and waist</td><td>2 pelvis halves, waist yaw link, stator carrier</td><td class="r">4</td></tr>
-          <tr><td>Legs</td><td>hip pitch link, hip roll link, thigh, shin (with push rods), per side</td><td class="r">8</td></tr>
-          <tr><td>Actuators</td><td>housing front/middle/rear, output front/rear, cycloidal disc, shafts, spacer, per actuator</td><td class="r">9 each</td></tr>
+          <tr><td>Legs</td><td>hip pitch link, hip roll link (<code>_yaw</code>), thigh (<code>_yaw</code>), shin, ankle roll link, per side</td><td class="r">10</td></tr>
+          <tr><td>Actuators</td><td>housing front/middle/rear, motor shell, output front/rear and internals, per actuator</td><td class="r">9 × set</td></tr>
         </tbody>
-        <tfoot><tr><td>Filament</td><td>PLA or PETG (PETG for hubs); the leg STLs are still solid</td><td class="r">~7.5 kg</td></tr></tfoot>
+        <tfoot><tr><td>Filament</td><td>PLA or PETG, at least 4 walls (1.6 mm); the leg STLs are still solid</td><td class="r">~7.5 kg</td></tr></tfoot>
       </table>
     </div>
 
@@ -284,10 +298,10 @@
           <tr><td>2020 inside corner bracket</td><td>frame joints</td><td class="r">12</td></tr>
           <tr><td>M5 drop-in T-nut</td><td>panels, blocks, trays, brackets</td><td class="r">~60</td></tr>
           <tr><td>M5 countersunk and cap screws, 8–35 mm</td><td>panels, top panel, blocks, plate, trays</td><td class="r">~60</td></tr>
-          <tr><td>M3 heat-set insert, Ø4 × 5.7</td><td>actuator ring stacks (12 per actuator), pelvis join, carrier, head, plate edge</td><td class="r">~120</td></tr>
+          <tr><td>M3 heat-set insert, hole Ø4.0</td><td>arms (42 per arm), hip yaw (18 per leg), other actuators and joins</td><td class="r">~200</td></tr>
+          <tr><td>M3 screws, 6–35 mm</td><td>arm cartridges and horn plates (42 per arm), hip-yaw housing (M3 × 35, 12 per leg), other actuator outputs, head</td><td class="r">~230</td></tr>
+          <tr><td>M2 × 6 self-tapping screws</td><td>horn arms into the horn pockets (about 4 per horn)</td><td class="r">~60</td></tr>
           <tr><td>M4 heat-set insert + M4 × 14</td><td>waist riser to torso plate</td><td class="r">6</td></tr>
-          <tr><td>M3 screws</td><td>actuator outputs (6 per joint), ring clamps, hatches, head</td><td class="r">~200</td></tr>
-          <tr><td>M2 / M3 self-tapping screws</td><td>servo hatches, hubs, radial retaining screws</td><td class="r">~150</td></tr>
           <tr><td>4 mm dowel pin</td><td>pelvis halves</td><td class="r">2</td></tr>
         </tbody>
       </table>
@@ -302,14 +316,14 @@
       <span class="page-num">— 07 / 08 —</span>
     </header>
     <ol class="steps">
-      <li><div><h3>Export and print</h3><p>Render each file in <code>parts_left/</code>, <code>parts_right/</code> and <code>hardware/</code> with F6 and export it. The torso, head, pelvis, leg and waist parts are ready-made STLs. Print hatches and caps in the same material as their link so the seams disappear, and hubs in PETG, hex end down.</p></div></li>
-      <li><div><h3>Check your servos first</h3><p>Measure the shaft offset, horn diameter and horn height of the servos you bought and compare them with <code>SERVO</code> in <code>generator/design.py</code>. If they differ, change them and run <code>emit.py</code> before printing the arms.</p></div></li>
+      <li><div><h3>Print the fit tests</h3><p>Print <code>STL/arms/fit_tests/</code> and one horn plate first. Check that the bearings press in, the pins fit, the inserts melt in cleanly and your servos and horns drop into their pockets. If anything is off, change <code>BORE_PRESS</code>, <code>INS_D</code>, <code>CLR</code>, <code>SERVO</code> or <code>HORN</code> in <code>arms/generator/design.py</code> and regenerate before printing the arms.</p></div></li>
+      <li><div><h3>Print everything else</h3><p>All parts are ready-made STLs in mm. The arm actuator parts are already lying flat; the links are in their G1 frame, so orient them in the slicer.</p></div></li>
       <li><div><h3>Build the pelvis</h3><p>Melt in the inserts, bolt each hip-pitch stator to its pelvis half, join the halves on the dowels, then fit the waist stator carrier and build the waist and hip-pitch actuators into their pockets.</p></div></li>
-      <li><div><h3>Build each leg downwards</h3><p>Hip pitch link, then the hip-roll actuator, roll link, thigh, knee actuator and shin. Each joint has to be finished before the next actuator goes in.</p></div></li>
+      <li><div><h3>Build each leg downwards</h3><p>Hip pitch link, then the hip-roll actuator and roll link. For hip yaw, bolt the actuator's output shaft to the top of the thigh first, build the rest of the actuator on it, then put it into the hip roll link's pocket and bolt it through the housing into the floor inserts. Then the knee actuator and shin.</p></div></li>
       <li><div><h3>Build the torso frame</h3><p>Screw the posts to the bottom plate, add the side rails and crossbars, then bolt the shoulder blocks (with their servos) and the top panel onto the crossbars.</p></div></li>
-      <li><div><h3>Join torso and pelvis</h3><p>Bolt the waist yaw link to the waist output through the bores in its riser, then lower the torso onto it and fit six M4 screws from inside the torso.</p></div></li>
+      <li><div><h3>Join torso and pelvis</h3><p>Bolt the waist yaw link to the waist output, then lower the torso onto it and fit six M4 screws from inside the torso.</p></div></li>
       <li><div><h3>Head, electronics, panels</h3><p>Screw the head to the top panel from inside, fit the trays with their boards, run the D455 cable down the neck hole, then fit the back and front panels last.</p></div></li>
-      <li><div><h3>Arms</h3><p>At each joint, drop the servo in, screw the hub to the horn, set the horn at the servo's centre, screw the hatch back on and slide the next link onto the hex.</p></div></li>
+      <li><div><h3>Arms</h3><p>For each joint: slide the cartridge into the link, drop in the servo, close it with its cap, screw the horn into its plate or pocket, set the servo at its centre and fit the centre screw. Then fit the next link and its screws, and the idler pin on yoke joints. The order for each joint is in <code>STL/arms/README.md</code>.</p></div></li>
     </ol>
     <p class="note">Every actuator is a pinch hazard once powered. Test each joint on a bench supply before it goes into the robot, and keep fingers clear of the hips and knees.</p>
   </section>
@@ -320,23 +334,26 @@
       <div class="split-copy">
         <span class="sec-num">§ 08</span>
         <h2>What has been checked</h2>
-        <p class="body-lg">Each generator checks its own parts on the real geometry, so these hold for the files as published. None of it replaces a test print.</p>
+        <p class="body-lg">These checks were run on the real geometry, so they hold for the files as published. None of it replaces a test print.</p>
         <dl class="specs">
-          <div><dt>Arm servos</dt><dd>fully inside their links, every joint swept through its G1 range with no collisions</dd></div>
-          <div><dt>Torso frame</dt><dd>at least 5.5 mm inside the skin; no part overlaps; every panel slides off in one direction</dd></div>
-          <div><dt>Panel surface</dt><dd>94–95 % within 0.05 mm of the original G1 torso</dd></div>
-          <div><dt>Waist</dt><dd>clears the pelvis and actuator from −150° to +150°; at least 3 mm wall round the pocket</dd></div>
-          <div><dt>Right leg</dt><dd>matches the mirrored left to 0.0001 mm in a mirrored pose</dd></div>
+          <div><dt>Meshes</dt><dd>every arm and hip-yaw STL is watertight, one piece, with consistent normals</dd></div>
+          <div><dt>Arm parts</dt><dd>no cartridge, cap, plate, pin or servo overlaps a link; links swept ±1 rad with no collisions beyond the stock G1's own</dd></div>
+          <div><dt>Arm walls</dt><dd>at least 0.7 mm round every pocket; at least 2.5 mm at the elbow</dd></div>
+          <div><dt>Right arm</dt><dd>built from Unitree's right-arm meshes, not a mirror of the left</dd></div>
+          <div><dt>Assemblies</dt><dd>arm part positions match the generator to within 0.0001 mm</dd></div>
+          <div><dt>Hip yaw</dt><dd>about 10–12 mm of wall round the pocket, at least 11 mm above each insert</dd></div>
         </dl>
       </div>
       <div class="split-copy">
         <h2>Still to do</h2>
-        <p class="body-lg">The OpenSCAD files have been checked for paths and structure but not yet rendered on every OpenSCAD version. Please report any part that doesn't render.</p>
+        <p class="body-lg">The <code>.scad</code> assemblies have been checked for paths and placement, but haven't been rendered in OpenSCAD itself yet. Please report any part that doesn't load.</p>
         <dl class="specs">
-          <div><dt>Hip yaw</dt><dd>in the parametric leg file; not yet in the leg STLs</dd></div>
-          <div><dt>Ankles and feet</dt><dd>not designed</dd></div>
+          <div><dt>Test prints</dt><dd>nothing in the arm or hip-yaw set has been printed yet</dd></div>
+          <div><dt>Shoulder yaw</dt><dd>the weakest joint: needs about 5 kg·cm with the arm out and elbow bent</dd></div>
+          <div><dt>Shoulder pitch hub</dt><dd>assumes the torso servo's horn is about 2 mm inboard of the pitch link; check before printing</dd></div>
+          <div><dt>Ankles and feet</dt><dd>stock G1 parts; <code>ankle_crank.stl</code> not yet placed</dd></div>
           <div><dt>Leg shells</dt><dd>the leg STLs are solid; shell them before printing</dd></div>
-          <div><dt>Cables</dt><dd>routes between links and across the waist not designed</dd></div>
+          <div><dt>Cables</dt><dd>channels out of each arm link only; wires cross joints with a service loop</dd></div>
           <div><dt>Simulator</dt><dd>legs and waist still use the G1's own parameters</dd></div>
         </dl>
         <div class="sources">
@@ -397,8 +414,8 @@
     <div><dt>Sheet</dt><dd>002-A</dd></div>
     <div><dt>Size</dt><dd>A2</dd></div>
     <div><dt>Scale</dt><dd>1 : 1</dd></div>
-    <div><dt>Date</dt><dd>19.11.26</dd></div>
-    <div><dt>Rev</dt><dd class="accent">R0</dd></div>
+    <div><dt>Date</dt><dd>20.11.26</dd></div>
+    <div><dt>Rev</dt><dd class="accent">R1</dd></div>
   </dl>
 
   <div class="footer-bottom">

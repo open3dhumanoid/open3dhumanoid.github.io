@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design files and parts — OpenG1</title>
+  <meta name="description" content="How the OpenG1 OpenSCAD files work, what was changed from the original Unitree G1 meshes, every part you need, and how it all fits together.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech&amp;family=Share+Tech+Mono&amp;display=swap">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../pages.css">
+  <script src="script.js" defer></script>
+  <style>
+    /* figures on this page only */
+    .fig-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2rem;align-items:start;margin-top:1.5rem}
+    .fig-grid--2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+    .fig{margin:0}
+    .fig img{display:block;width:100%;height:auto;background:#fff}
+    .fig--tall img{max-height:900px;width:auto;max-width:100%;margin:0 auto}
+    .fig figcaption{display:flex;justify-content:space-between;gap:1rem;margin-top:.6rem;font-family:"Share Tech Mono",monospace;font-size:.85rem;opacity:.85}
+    .fig p{margin:.4rem 0 0;font-size:.95rem}
+    .data-table code,.body-lg code,.steps code,.specs code,.note code{font-family:"Share Tech Mono",monospace;font-size:.92em}
+  </style>
+</head>
+<body>
+
+<div class="ruler" aria-hidden="true"></div>
+
+<!-- ============ Header ============ -->
+<header class="site-header container">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="https://open3dhumanoid.github.io/index.html">
+      <svg class="brand-mark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="s-ink" cx="20" cy="20" r="18.5" fill="none" stroke-width="1"/>
+        <path class="s-acc" d="M20 1V39M1 20H39" fill="none" stroke-width="0.6" stroke-dasharray="4 1.5 1 1.5"/>
+        <path class="s-ink" data-art="logo" fill="none" stroke-width="1.3"/>
+      </svg>
+      <span class="brand-name">OpenG1</span>
+    </a>
+    <div class="nav-links">
+      <a href="https://open3dhumanoid.github.io/index.html#robot"><span class="num">01</span>Robot</a>
+      <a href="https://open3dhumanoid.github.io/development.html"><span class="num">02</span>Development</a>
+      <a href="https://open3dhumanoid.github.io/guides.html" aria-current="page"><span class="num">03</span>Build guides</a>
+      <a href="https://open3dhumanoid.github.io/team.html"><span class="num">04</span>Team</a>
+    </div>
+    <a class="btn btn--solid btn--sm" href="index.html#follow">Follow the project</a>
+  </nav>
+</header>
+
+<main>
+  <section class="page-intro container">
+    <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Build guide G.02 — design files · status: draft</p>
+    <h1 class="page-title">The design files</h1>
+    <p class="lede">Every part of OpenG1 starts from the Unitree G1's own meshes. The OpenSCAD files cut pockets for the actuators, add a frame where the printer needs one, and keep the outside shape. This guide shows how the files are organised, what was changed from the originals, every part you need, and how it all goes together.</p>
+  </section>
+
+  <!-- ============ § 01 — The robot in one file ============ -->
+  <section class="section container">
+    <header class="section-head">
+      <span class="sec-num">§ 01</span>
+      <h2>The robot in one file</h2>
+      <span class="page-num">— 01 / 08 —</span>
+    </header>
+    <div class="split">
+      <figure class="fig fig--tall">
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/robot_full.png" alt="Render of the whole OpenG1 robot: dome head, framed torso, servo arms with rubber hands, waist joint and printed legs" loading="lazy">
+        <figcaption><span>Fig. 1 — assembly.scad</span><span>arms and legs posed</span></figcaption>
+      </figure>
+      <div class="split-copy">
+        <h2>Open it, pose it, export it</h2>
+        <p class="body-lg"><code>OpenScad/assembly/assembly.scad</code> loads every part of the robot in the G1's torso frame and poses it with the G1's own joint angles. Change the numbers at the top of the file and press F5. Every printable part also has its own file, which you open, render with F6 and export as an STL.</p>
+        <dl class="specs">
+          <div><dt><code>qL</code>, <code>qR</code></dt><dd>arms, 7 angles each: shoulder pitch, roll, yaw, elbow, wrist roll, pitch, yaw</dd></div>
+          <div><dt><code>qLegL</code>, <code>qLegR</code></dt><dd>legs, 4 angles each: hip pitch, hip roll, hip yaw, knee</dd></div>
+          <div><dt><code>qWaist</code></dt><dd>waist yaw, turns the torso on the pelvis</dd></div>
+          <div><dt><code>torso_style</code></dt><dd><code>"framed"</code> (aluminium frame + panels) or <code>"solid"</code> (old one-piece torso)</dd></div>
+          <div><dt>Angles</dt><dd>degrees, same signs as the G1 URDF on both sides</dd></div>
+          <div><dt>OpenSCAD</dt><dd>2024 or newer, with the Manifold backend for F6</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ § 02 — How the files are organised ============ -->
+  <section class="section section--wide container">
+    <div class="split">
+      <div class="split-copy">
+        <span class="sec-num">§ 02</span>
+        <h2>How the files are organised</h2>
+        <p class="body-lg">The repository has two halves. <code>OpenScad/</code> holds the files you open; <code>STL/</code> holds the meshes they load. Each file you open sits exactly one folder below <code>OpenScad/</code>, and every mesh path is written as <code>../../STL/…</code> from there. That is why the folders must stay as they are. If OpenSCAD can't find a mesh, it prints a warning in the console and shows an empty view.</p>
+        <p class="body-lg">Shared code lives in <code>OpenScad/lib/</code>. <code>g1_servo_arm.scad</code> has every arm and shoulder joint, <code>torso_frame_lib.scad</code> the frame and torso panels, and <code>legs_lib.scad</code> the pelvis, legs and waist. The part files and the assembly include them.</p>
+        <dl class="specs">
+          <div><dt>Open from</dt><dd>the file's own folder (File → Open)</dd></div>
+          <div><dt>Units</dt><dd>mm, in each part's G1 link frame</dd></div>
+          <div><dt>Printable parts</dt><dd>arm parts from <code>parts_left/</code>, <code>parts_right/</code>, <code>hardware/</code>; the rest are ready-made STLs</dd></div>
+        </dl>
+      </div>
+      <div class="printout">
+        <div class="sprockets" aria-hidden="true"></div>
+        <div class="print-body">
+          <div class="pl pl--muted">**** OpenScad/ ****</div>
+          <div class="pl"><span class="ln">0010</span><span>assembly/   whole robot, posable</span></div>
+          <div class="pl"><span class="ln">0020</span><span>parts_left/ parts_right/   arm parts</span></div>
+          <div class="pl"><span class="ln">0030</span><span>hardware/   servo hubs, idler pins</span></div>
+          <div class="pl"><span class="ln">0040</span><span>torso_frame/   frame + torso panels</span></div>
+          <div class="pl"><span class="ln">0050</span><span>head/   dome head, D455</span></div>
+          <div class="pl"><span class="ln">0060</span><span>legs/   pelvis, legs, waist/</span></div>
+          <div class="pl"><span class="ln">0070</span><span>generator/   design.py, emit.py</span></div>
+          <div class="pl"><span class="ln">0080</span><span>lib/   shared modules</span></div>
+          <div class="pl pl--muted">**** STL/ ****</div>
+          <div class="pl"><span class="ln">0090</span><span>arms/  torso/  torso_frame/</span></div>
+          <div class="pl"><span class="ln">0100</span><span>head/  legs/  legs/actuator/</span></div>
+          <div class="pl pl--muted">**** End of listing ****</div>
+        </div>
+        <div class="sprockets sprockets--right" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ § 03 — Where the geometry comes from ============ -->
+  <section class="section container">
+    <header class="section-head">
+      <span class="sec-num">§ 03</span>
+      <h2>Where the geometry comes from</h2>
+      <span class="page-num">— 03 / 08 —</span>
+    </header>
+    <div class="section-intro">
+      <p class="body-lg">No part is drawn by hand twice. Each subsystem has one Python script that holds every dimension, writes the OpenSCAD or STL files, and checks the result: actuators inside their links, walls at least 3 mm, joints swept through their G1 ranges, parts removable in their assembly order. Change the parameters and run the script again.</p>
+      <span class="meta">5 generators</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Subsystem</th><th>Edit</th><th>Run</th><th>Writes</th></tr></thead>
+        <tbody>
+          <tr><td>Arm and shoulder joints</td><td><code>generator/design.py</code></td><td><code>emit.py</code></td><td><code>lib/g1_servo_arm.scad</code>, <code>assembly.scad</code></td></tr>
+          <tr><td>Framed torso</td><td><code>torso_frame/generator/layout.py</code></td><td>7 short scripts, about 7 min</td><td><code>STL/torso_frame/</code>, <code>torso_frame.scad</code></td></tr>
+          <tr><td>Left leg and pelvis</td><td><code>legs/integrate_leg.py</code></td><td>same</td><td><code>STL/legs/left_*</code>, pelvis halves</td></tr>
+          <tr><td>Right leg</td><td>—</td><td><code>legs/mirror_right.py</code></td><td><code>STL/legs/right_*</code></td></tr>
+          <tr><td>Waist yaw</td><td><code>legs/waist/gen_waist.py</code></td><td>then <code>check_waist.py</code></td><td>pelvis with waist pocket, carrier, waist link</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">The parametric leg file <code>legs/g1_leg_actuators.scad</code> builds the same leg, pelvis and waist parts in OpenSCAD itself, and also adds the hip yaw actuator. It needs the cleaned G1 meshes in <code>STL/legs/stock/</code>.</p>
+  </section>
+
+  <!-- ============ § 04 — What changed from the originals ============ -->
+  <section class="section container">
+    <header class="section-head">
+      <span class="sec-num">§ 04</span>
+      <h2>What changed from the original G1 files</h2>
+      <span class="page-num">— 04 / 08 —</span>
+    </header>
+    <div class="section-intro">
+      <p class="body-lg">The rule throughout is to cut, not add. The outside of every link keeps the G1 shape. Material is only added where a wall around an actuator would be thinner than 3 mm, and it stays inside the original outline. Where a pocket opens to the outside, the piece that was removed comes back as a hatch that screws on.</p>
+      <span class="meta">Every link checked</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Part</th><th>Original</th><th>What changed</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Arm links (7 per arm)</td><td>G1 arm STLs, imported unchanged</td><td>Servo pocket, screw-on hatch, hex socket for the output hub, radial retaining screws. The wrist covers get bosses inside, clipped to the cover. The rubber hand is trimmed and fixed after wrist yaw.</td><td>A hobby servo in every arm joint, 7 joints per arm</td></tr>
+          <tr><td>Shoulder roll link</td><td>G1 STL</td><td>Three tiny bow-tie mesh errors separated</td><td>The original wasn't a clean solid</td></tr>
+          <tr><td>Torso</td><td><code>torso_link_rev_1_0</code>, one 150 × 215 × 320 mm solid</td><td>Hollowed to a 3 mm skin and split into 10 printed parts on a 2020 frame. The outside follows the original to within 0.05 mm on 94–95 % of the panel surface. Shoulder blocks keep the shoulder-pitch servo pockets.</td><td>Fits a 220 × 220 × 250 mm bed, room for electronics</td></tr>
+          <tr><td>Head</td><td>G1 <code>head_link</code></td><td>Stock collar kept below 372 mm; a 250 mm dome with the D455, five removable panels and two servo-driven brows above it; four heat-set inserts for the neck</td><td>Depth camera and a face</td></tr>
+          <tr><td>Pelvis</td><td>G1 <code>pelvis</code></td><td>Hip-pitch actuator pockets, split into two halves on the centre plane, and a waist-yaw pocket in the top disc with a drop-in stator carrier</td><td>Three 6512 actuators in one part</td></tr>
+          <tr><td>Hip pitch, hip roll, thigh, shin</td><td>G1 left-leg STLs</td><td>Parent link becomes the actuator housing; child link bolts to the output. Right leg = left mirrored in y</td><td>6512 at hip pitch, hip roll and knee</td></tr>
+          <tr><td>Waist yaw link</td><td>G1 <code>waist_yaw_link_rev_1_0</code></td><td>Roll/pitch lugs removed, riser up to the torso plate, output boss and torso inserts</td><td>23-DoF G1 locks waist roll and pitch</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="fig-grid">
+      <figure class="fig">
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/arm_hatches.png" alt="Eight arm and shoulder links, each with its blue screw-on hatch pulled away to show the servo pocket" loading="lazy">
+        <figcaption><span>Fig. 2 — servo pockets and hatches</span><span>blue = hatch or cover</span></figcaption>
+        <p>Each joint's hatch pulled out to show the pocket behind it. These come from the voxel check model, which is why the surfaces look stepped; the printed parts keep the original surface.</p>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ § 05 — How it fits together ============ -->
+  <section class="section container" id="fit">
+    <header class="section-head">
+      <span class="sec-num">§ 05</span>
+      <h2>How it fits together</h2>
+      <span class="page-num">— 05 / 08 —</span>
+    </header>
+    <div class="split">
+      <figure class="fig fig--tall">
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/robot_exploded.png" alt="Exploded view of OpenG1: head lifted off, torso panels and shoulder blocks pulled away from the aluminium frame, arms out to the sides, pelvis halves apart with the actuators visible, legs separated at each joint" loading="lazy">
+        <figcaption><span>Fig. 3 — exploded</span><span>orange = 6512 actuators</span></figcaption>
+      </figure>
+      <div class="split-copy">
+        <h2>From the pelvis up</h2>
+        <p class="body-lg">The pelvis is the base. It holds both hip-pitch actuators and the waist-yaw actuator, and each leg hangs from it joint by joint. The waist yaw link bolts onto the waist output and carries the torso. The torso is an aluminium frame: the shoulder blocks and top panel bolt onto its crossbars, the front and back panels close it, and the head bolts to the top panel. Each arm starts at the servo in its shoulder block.</p>
+        <dl class="specs">
+          <div><dt>Leg chain</dt><dd>pelvis → hip pitch link → hip roll link → thigh → shin</dd></div>
+          <div><dt>Waist</dt><dd>pelvis → waist yaw link → torso bottom plate</dd></div>
+          <div><dt>Torso</dt><dd>4 posts, 2 crossbars, 4 side rails, 10 printed parts</dd></div>
+          <div><dt>Arm chain</dt><dd>shoulder block → pitch → roll → yaw → elbow → wrist roll → wrist pitch → wrist yaw + hand</dd></div>
+          <div><dt>Head</dt><dd>4 × M3 up through the top panel into the collar</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="fig-grid fig-grid--2">
+      <figure class="fig">
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/torso_inside.png" alt="Torso with the front panel removed, showing the aluminium frame, the driver tray at the front, the compute tray at the back, the bottom plate and the waist riser" loading="lazy">
+        <figcaption><span>Fig. 4 — torso, front panel off</span><span>frame, trays, waist riser</span></figcaption>
+        <p>The front panel lifts off forwards and the back panel backwards. The driver tray (purple) and compute tray (green) bolt to the posts, with about 55 mm between them for boards.</p>
+      </figure>
+      <figure class="fig">
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/torso_frame_trays.png" alt="The aluminium torso frame on its own with the two electronics trays and the blue bottom plate" loading="lazy">
+        <figcaption><span>Fig. 5 — the frame</span><span>2020 extrusion, 1.22 m</span></figcaption>
+        <p>Four posts screw into the bottom plate, which sits on the waist riser. The shoulder blocks and top panel bolt onto the two crossbars.</p>
+      </figure>
+      <figure class="fig">
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/waist_cutaway.png" alt="Cutaway of the right pelvis half showing the waist actuator in the pelvis top, the stator carrier below it, the waist yaw link and riser above, and a hip actuator lower down" loading="lazy">
+        <figcaption><span>Fig. 6 — waist joint, cut open</span><span>right pelvis half</span></figcaption>
+        <p>The waist actuator sits in the pelvis top with its output facing up. The stator screws to a separate carrier (gold) that drops into the bottom of the pocket, because there's no way to reach behind a fixed floor inside the solid pelvis. The hip-pitch stator floor is lower down.</p>
+      </figure>
+      <figure class="fig">
+        <img src="https://open3dhumanoid.github.io/assets/img/openscad/legs_exploded.png" alt="Pelvis halves apart with the waist actuator and carrier above them, and both legs separated at each joint showing the hip and knee actuators" loading="lazy">
+        <figcaption><span>Fig. 7 — pelvis and legs</span><span>right = left mirrored</span></figcaption>
+        <p>The right leg is the left leg mirrored. Unitree's own right-leg meshes are exact mirrors of the left (to within 0.1 mm), and the actuator bolt patterns are evenly spaced, so the same unmirrored actuator fits both sides.</p>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ § 06 — Parts list ============ -->
+  <section class="section container" id="parts">
+    <header class="section-head">
+      <span class="sec-num">§ 06</span>
+      <h2>Everything you need</h2>
+      <span class="page-num">— 06 / 08 —</span>
+    </header>
+    <div class="section-intro">
+      <p class="body-lg">Quantities for the whole robot as the files stand: legs with actuators at hip pitch, hip roll and knee, the waist, torso, head and both arms. Ankles and feet aren't designed yet. Screw lengths for each joint are in the README of each subsystem.</p>
+      <span class="meta">Draft, not yet built</span>
+    </div>
+
+    <h3>Actuators and electronics</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Item</th><th>Where</th><th class="r">Qty</th></tr></thead>
+        <tbody>
+          <tr><td>6512 printed cycloidal actuator (motor, B-G431B-ESC1, AS5600, bearings)</td><td>hip pitch, hip roll, knee × 2; waist yaw</td><td class="r">7</td></tr>
+          <tr class="muted"><td>… plus hip yaw, once the leg STLs include it</td><td>hip yaw × 2</td><td class="r">+2</td></tr>
+          <tr><td>DS3235 servo, 270° version</td><td>shoulder pitch, shoulder roll</td><td class="r">4</td></tr>
+          <tr><td>KST X10 Pro servo</td><td>shoulder yaw, elbow</td><td class="r">4</td></tr>
+          <tr><td>TowerPro MG92B servo</td><td>wrist roll, pitch, yaw</td><td class="r">6</td></tr>
+          <tr><td>SG90 micro servo</td><td>brows</td><td class="r">2</td></tr>
+          <tr><td>Round metal servo horns</td><td>arm and shoulder servos</td><td class="r">14</td></tr>
+          <tr><td>16-channel servo driver (e.g. PCA9685)</td><td>14 arm/shoulder servos + 2 brows</td><td class="r">1</td></tr>
+          <tr><td>Intel RealSense D455</td><td>head</td><td class="r">1</td></tr>
+          <tr><td>Compute board (Raspberry Pi 5 or 86 mm-hole board such as Jetson Orin Nano)</td><td>compute tray</td><td class="r">1</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Printed parts</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Group</th><th>Parts</th><th class="r">Count</th></tr></thead>
+        <tbody>
+          <tr><td>Arms</td><td>7 links per arm with their hatches and wrist covers (17 files per side)</td><td class="r">34</td></tr>
+          <tr><td>Servo hardware</td><td>hubs: DS3235 × 4, X10 Pro × 4, MG92B × 6; idler pins × 4</td><td class="r">18</td></tr>
+          <tr><td>Torso</td><td>front, back and top panels; 2 shoulder blocks + hatches; bottom plate; compute and driver trays</td><td class="r">10</td></tr>
+          <tr><td>Head</td><td>frame, 5 panels, 2 brows</td><td class="r">8</td></tr>
+          <tr><td>Pelvis and waist</td><td>2 pelvis halves, waist yaw link, stator carrier</td><td class="r">4</td></tr>
+          <tr><td>Legs</td><td>hip pitch link, hip roll link, thigh, shin (with push rods), per side</td><td class="r">8</td></tr>
+          <tr><td>Actuators</td><td>housing front/middle/rear, output front/rear, cycloidal disc, shafts, spacer, per actuator</td><td class="r">9 each</td></tr>
+        </tbody>
+        <tfoot><tr><td>Filament</td><td>PLA or PETG (PETG for hubs); the leg STLs are still solid</td><td class="r">~7.5 kg</td></tr></tfoot>
+      </table>
+    </div>
+
+    <h3>Frame and fasteners</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Item</th><th>Where</th><th class="r">Qty</th></tr></thead>
+        <tbody>
+          <tr><td>2020 extrusion, slot 6: 4 × 164, 1 × 140, 1 × 170, 4 × 63 mm</td><td>torso frame</td><td class="r">1.22 m</td></tr>
+          <tr><td>2020 inside corner bracket</td><td>frame joints</td><td class="r">12</td></tr>
+          <tr><td>M5 drop-in T-nut</td><td>panels, blocks, trays, brackets</td><td class="r">~60</td></tr>
+          <tr><td>M5 countersunk and cap screws, 8–35 mm</td><td>panels, top panel, blocks, plate, trays</td><td class="r">~60</td></tr>
+          <tr><td>M3 heat-set insert, Ø4 × 5.7</td><td>actuator ring stacks (12 per actuator), pelvis join, carrier, head, plate edge</td><td class="r">~120</td></tr>
+          <tr><td>M4 heat-set insert + M4 × 14</td><td>waist riser to torso plate</td><td class="r">6</td></tr>
+          <tr><td>M3 screws</td><td>actuator outputs (6 per joint), ring clamps, hatches, head</td><td class="r">~200</td></tr>
+          <tr><td>M2 / M3 self-tapping screws</td><td>servo hatches, hubs, radial retaining screws</td><td class="r">~150</td></tr>
+          <tr><td>4 mm dowel pin</td><td>pelvis halves</td><td class="r">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ § 07 — Build order ============ -->
+  <section class="section container" id="steps">
+    <header class="section-head">
+      <span class="sec-num">§ 07</span>
+      <h2>Build order</h2>
+      <span class="page-num">— 07 / 08 —</span>
+    </header>
+    <ol class="steps">
+      <li><div><h3>Export and print</h3><p>Render each file in <code>parts_left/</code>, <code>parts_right/</code> and <code>hardware/</code> with F6 and export it. The torso, head, pelvis, leg and waist parts are ready-made STLs. Print hatches and caps in the same material as their link so the seams disappear, and hubs in PETG, hex end down.</p></div></li>
+      <li><div><h3>Check your servos first</h3><p>Measure the shaft offset, horn diameter and horn height of the servos you bought and compare them with <code>SERVO</code> in <code>generator/design.py</code>. If they differ, change them and run <code>emit.py</code> before printing the arms.</p></div></li>
+      <li><div><h3>Build the pelvis</h3><p>Melt in the inserts, bolt each hip-pitch stator to its pelvis half, join the halves on the dowels, then fit the waist stator carrier and build the waist and hip-pitch actuators into their pockets.</p></div></li>
+      <li><div><h3>Build each leg downwards</h3><p>Hip pitch link, then the hip-roll actuator, roll link, thigh, knee actuator and shin. Each joint has to be finished before the next actuator goes in.</p></div></li>
+      <li><div><h3>Build the torso frame</h3><p>Screw the posts to the bottom plate, add the side rails and crossbars, then bolt the shoulder blocks (with their servos) and the top panel onto the crossbars.</p></div></li>
+      <li><div><h3>Join torso and pelvis</h3><p>Bolt the waist yaw link to the waist output through the bores in its riser, then lower the torso onto it and fit six M4 screws from inside the torso.</p></div></li>
+      <li><div><h3>Head, electronics, panels</h3><p>Screw the head to the top panel from inside, fit the trays with their boards, run the D455 cable down the neck hole, then fit the back and front panels last.</p></div></li>
+      <li><div><h3>Arms</h3><p>At each joint, drop the servo in, screw the hub to the horn, set the horn at the servo's centre, screw the hatch back on and slide the next link onto the hex.</p></div></li>
+    </ol>
+    <p class="note">Every actuator is a pinch hazard once powered. Test each joint on a bench supply before it goes into the robot, and keep fingers clear of the hips and knees.</p>
+  </section>
+
+  <!-- ============ § 08 — Checks and gaps ============ -->
+  <section class="section container">
+    <div class="split">
+      <div class="split-copy">
+        <span class="sec-num">§ 08</span>
+        <h2>What has been checked</h2>
+        <p class="body-lg">Each generator checks its own parts on the real geometry, so these hold for the files as published. None of it replaces a test print.</p>
+        <dl class="specs">
+          <div><dt>Arm servos</dt><dd>fully inside their links, every joint swept through its G1 range with no collisions</dd></div>
+          <div><dt>Torso frame</dt><dd>at least 5.5 mm inside the skin; no part overlaps; every panel slides off in one direction</dd></div>
+          <div><dt>Panel surface</dt><dd>94–95 % within 0.05 mm of the original G1 torso</dd></div>
+          <div><dt>Waist</dt><dd>clears the pelvis and actuator from −150° to +150°; at least 3 mm wall round the pocket</dd></div>
+          <div><dt>Right leg</dt><dd>matches the mirrored left to 0.0001 mm in a mirrored pose</dd></div>
+        </dl>
+      </div>
+      <div class="split-copy">
+        <h2>Still to do</h2>
+        <p class="body-lg">The OpenSCAD files have been checked for paths and structure but not yet rendered on every OpenSCAD version. Please report any part that doesn't render.</p>
+        <dl class="specs">
+          <div><dt>Hip yaw</dt><dd>in the parametric leg file; not yet in the leg STLs</dd></div>
+          <div><dt>Ankles and feet</dt><dd>not designed</dd></div>
+          <div><dt>Leg shells</dt><dd>the leg STLs are solid; shell them before printing</dd></div>
+          <div><dt>Cables</dt><dd>routes between links and across the waist not designed</dd></div>
+          <div><dt>Simulator</dt><dd>legs and waist still use the G1's own parameters</dd></div>
+        </dl>
+        <div class="sources">
+          <a class="link-arrow" href="https://github.com/open3dhumanoid/humanoid">Design files on GitHub <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+          <a class="link-arrow" href="https://github.com/open3dhumanoid/humanoid-gym">Simulator (humanoid-gym) <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+          <a class="link-arrow" href="motor.html">Actuator build guide <svg class="arrow" width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M0 5H20M15 1L20 5L15 9"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ Footer ============ -->
+<footer class="site-footer container">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="brand">
+        <svg class="brand-mark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="s-ink" cx="20" cy="20" r="18.5" fill="none" stroke-width="1"/>
+        <path class="s-acc" d="M20 1V39M1 20H39" fill="none" stroke-width="0.6" stroke-dasharray="4 1.5 1 1.5"/>
+        <path class="s-ink" data-art="logo" fill="none" stroke-width="1.3"/>
+      </svg>
+        <span class="brand-name">OpenG1</span>
+      </div>
+      <p>An open-source, 3D-printable humanoid robot based on the Unitree G1. Not affiliated with Unitree.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Project">
+      <h3>Project</h3>
+      <ul>
+        <li><a href="index.html#robot">The robot</a></li>
+        <li><a href="index.html#status">Roadmap</a></li>
+        <li><a href="index.html#follow">Updates</a></li>
+        <li><a href="#">FAQ</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="Learn">
+      <h3>Learn</h3>
+      <ul>
+        <li><a href="https://open3dhumanoid.github.io/development.html">Development log</a></li>
+        <li><a href="https://open3dhumanoid.github.io/guides.html">Build guides</a></li>
+        <li><a href="#parts">Bill of materials</a></li>
+        <li><a href="#">Safety</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="Community">
+      <h3>Community</h3>
+      <ul>
+        <li><a href="https://open3dhumanoid.github.io/team.html">Team</a></li>
+        <li><a href="https://open3dhumanoid.github.io/team.html#collaborators">Collaborators</a></li>
+        <li><a href="https://github.com/open3dhumanoid">Source code</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <dl class="title-block title-block--footer">
+    <div class="wide"><dt>Project</dt><dd class="caps">OpenG1</dd></div>
+    <div><dt>Sheet</dt><dd>002-A</dd></div>
+    <div><dt>Size</dt><dd>A2</dd></div>
+    <div><dt>Scale</dt><dd>1 : 1</dd></div>
+    <div><dt>Date</dt><dd>19.11.26</dd></div>
+    <div><dt>Rev</dt><dd class="accent">R0</dd></div>
+  </dl>
+
+  <div class="footer-bottom">
+    <span>© OpenG1 project contributors</span>
+    <div class="scale" aria-hidden="true">
+      <div class="scale-bar"><span></span><span></span><span></span><span></span></div>
+      <div class="scale-labels"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span></div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
