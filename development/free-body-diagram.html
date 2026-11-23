@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Where the weight goes — OpenG1</title>
+  <meta name="description" content="A free body diagram of the standing OpenG1 humanoid: how its 35 kg splits into lumped weights, what the floor pushes back with, and how far each joint can carry a load at 85% of its rated torque.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech&amp;family=Share+Tech+Mono&amp;display=swap">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../pages.css">
+  <script src="../script.js" defer></script>
+  <style>
+    /* ---------- article components (only used on this page) ---------- */
+    .art-prose { max-width: 70ch; display: flex; flex-direction: column; gap: 18px; margin-top: 28px; }
+    .art-prose p { margin: 0; font-family: var(--sans); font-size: 18px; line-height: 1.6; color: var(--muted-dark); }
+    .art-prose em { font-style: normal; color: var(--ink); }
+    .art-specs { max-width: 760px; margin-top: 36px; }
+
+    .art-fig { margin: 40px 0 0; border: 1px solid var(--ink); background: var(--panel); }
+    .art-fig-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; padding: 10px 14px; border-bottom: 1px solid var(--ink); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+    .art-fig-head span:last-child { color: var(--muted); }
+    .art-fig-body { padding: 20px clamp(12px, 3vw, 28px) 24px; }
+    .art-fig figcaption { padding: 12px 14px; border-top: 1px solid var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; color: var(--muted); }
+
+    .art-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0 0 18px; padding: 0; list-style: none; font-size: 13px; letter-spacing: 0.06em; }
+    .art-legend li { display: flex; align-items: center; gap: 8px; }
+    .art-key { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid; }
+    .art-key--w { border-color: var(--accent); } .art-key--t { border-color: var(--accent-2); } .art-key--r { border-color: var(--ink); }
+
+    /* free body diagram drawing */
+    .fbd-svg { display: block; width: 100%; max-width: 560px; height: auto; margin-inline: auto; }
+    .fbd-svg .bd { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+    .fbd-svg .lm { fill: none; stroke: var(--ink); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: .3; }
+    .fbd-svg .jn { fill: var(--paper); stroke: var(--ink); stroke-width: 1.3; }
+    .fbd-svg .ar { fill: none; stroke: var(--accent-2); stroke-width: 2; }
+    .fbd-svg .wl { stroke: var(--accent); stroke-width: 3; }
+    .fbd-svg .wd { fill: var(--accent); }
+    .fbd-svg .gl { stroke: var(--ink); stroke-width: 4; }
+    .fbd-svg .gd { stroke: var(--ink); stroke-width: 2; }
+    .fbd-svg .gh { stroke: var(--ink); stroke-width: 1; }
+    .fbd-svg .cl { stroke: var(--accent-2); stroke-width: .8; stroke-dasharray: 6 2 1 2; }
+    .fbd-svg .tg circle { fill: var(--paper); stroke-width: 1.5; }
+    .fbd-svg .tg text { font: 11px var(--mono); text-anchor: middle; }
+    .fbd-svg .tg.w circle { stroke: var(--accent); } .fbd-svg .tg.w text { fill: var(--accent); }
+    .fbd-svg .tg.t circle { stroke: var(--accent-2); } .fbd-svg .tg.t text { fill: var(--accent-2); }
+    .fbd-svg .tg.g circle { stroke: var(--ink); } .fbd-svg .tg.g text { fill: var(--ink); }
+
+    .art-tbc { border: 1px solid var(--accent); color: var(--accent); padding: 0 6px; font-size: 11px; letter-spacing: 0.14em; }
+    .art-note-grid { margin-top: 32px; }
+  </style>
+</head>
+<body>
+
+<div class="ruler" aria-hidden="true"></div>
+
+<!-- ============ Header ============ -->
+<header class="site-header container">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="https://open3dhumanoid.github.io/index.html">
+      <svg class="brand-mark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="s-ink" cx="20" cy="20" r="18.5" fill="none" stroke-width="1"/>
+        <path class="s-acc" d="M20 1V39M1 20H39" fill="none" stroke-width="0.6" stroke-dasharray="4 1.5 1 1.5"/>
+        <path class="s-ink" data-art="logo" fill="none" stroke-width="1.3"/>
+      </svg>
+      <span class="brand-name">OpenG1</span>
+    </a>
+    <div class="nav-links">
+      <a href="https://open3dhumanoid.github.io/index.html#robot"><span class="num">01</span>Robot</a>
+      <a href="https://open3dhumanoid.github.io/development.html" aria-current="page"><span class="num">02</span>Development</a>
+      <a href="https://open3dhumanoid.github.io/guides.html"><span class="num">03</span>Build guides</a>
+      <a href="https://open3dhumanoid.github.io/team.html"><span class="num">04</span>Team</a>
+    </div>
+    <a class="btn btn--solid btn--sm" href="https://open3dhumanoid.github.io/index.html#follow">Follow the project</a>
+  </nav>
+</header>
+
+<main>
+  <section class="page-intro container">
+    <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Development article D.02 — mechanics · status: R0</p>
+    <h1 class="page-title">Where the weight goes</h1>
+    <p class="lede">One standing humanoid, cut into its parts. Weights are the OpenG1 page’s masses times 9.81, every joint torque is 85% of its rated limit, and the floor pushes back with exactly what the robot weighs.</p>
+    <dl class="specs art-specs">
+      <div><dt>Mass</dt><dd>35.112 kg</dd></div>
+      <div><dt>Weight</dt><dd>344.5 N</dd></div>
+      <div><dt>Per foot</dt><dd>172.2 N</dd></div>
+      <div><dt>Torque used</dt><dd>85% of rated</dd></div>
+    </dl>
+  </section>
+
+  <!-- ============ § 01 — Diagram ============ -->
+  <section class="section container" id="diagram">
+    <header class="section-head">
+      <span class="sec-num">§ 01</span>
+      <h2>The diagram</h2>
+      <span class="page-num">— 01 / 04 —</span>
+    </header>
+    <figure class="art-fig" id="fig-1">
+      <div class="art-fig-head"><span>Fig. 1 — free body diagram</span><span>344.5 N · 35.112 kg</span></div>
+      <div class="art-fig-body">
+        <ul class="art-legend">
+          <li><span class="art-key art-key--w" aria-hidden="true"></span>W1–W4 weights</li>
+          <li><span class="art-key art-key--t" aria-hidden="true"></span>J1–J7 joint torques</li>
+          <li><span class="art-key art-key--r" aria-hidden="true"></span>R ground reaction</li>
+        </ul>
+        <svg class="fbd-svg" viewBox="0 0 560 700" role="img" aria-label="Schematic humanoid with weights W1 to W4, joint torques J1 to J7 and ground reaction R">
+          <defs>
+          <marker id="fbd-mr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0 0 8 4 0 8z" fill="var(--accent)"/>
+          </marker>
+          <marker id="fbd-mg" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0 0 8 4 0 8z" fill="var(--ink)"/>
+          </marker>
+          <marker id="fbd-mb" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0 0 7 3.5 0 7z" fill="var(--accent-2)"/>
+          </marker>
+          </defs>
+          <line x1="280" y1="60" x2="280" y2="690" class="cl"/>
+          <line x1="128.20000000000002" y1="620" x2="431.79999999999995" y2="620" class="gd"/>
+          <line x1="128" y1="620" x2="122" y2="628" class="gh"/>
+          <line x1="137" y1="620" x2="131" y2="628" class="gh"/>
+          <line x1="147" y1="620" x2="141" y2="628" class="gh"/>
+          <line x1="156" y1="620" x2="150" y2="628" class="gh"/>
+          <line x1="165" y1="620" x2="159" y2="628" class="gh"/>
+          <line x1="174" y1="620" x2="168" y2="628" class="gh"/>
+          <line x1="183" y1="620" x2="177" y2="628" class="gh"/>
+          <line x1="193" y1="620" x2="187" y2="628" class="gh"/>
+          <line x1="202" y1="620" x2="196" y2="628" class="gh"/>
+          <line x1="211" y1="620" x2="205" y2="628" class="gh"/>
+          <line x1="220" y1="620" x2="214" y2="628" class="gh"/>
+          <line x1="229" y1="620" x2="223" y2="628" class="gh"/>
+          <line x1="239" y1="620" x2="233" y2="628" class="gh"/>
+          <line x1="248" y1="620" x2="242" y2="628" class="gh"/>
+          <line x1="257" y1="620" x2="251" y2="628" class="gh"/>
+          <line x1="266" y1="620" x2="260" y2="628" class="gh"/>
+          <line x1="275" y1="620" x2="269" y2="628" class="gh"/>
+          <line x1="285" y1="620" x2="279" y2="628" class="gh"/>
+          <line x1="294" y1="620" x2="288" y2="628" class="gh"/>
+          <line x1="303" y1="620" x2="297" y2="628" class="gh"/>
+          <line x1="312" y1="620" x2="306" y2="628" class="gh"/>
+          <line x1="321" y1="620" x2="315" y2="628" class="gh"/>
+          <line x1="331" y1="620" x2="325" y2="628" class="gh"/>
+          <line x1="340" y1="620" x2="334" y2="628" class="gh"/>
+          <line x1="349" y1="620" x2="343" y2="628" class="gh"/>
+          <line x1="358" y1="620" x2="352" y2="628" class="gh"/>
+          <line x1="367" y1="620" x2="361" y2="628" class="gh"/>
+          <line x1="377" y1="620" x2="371" y2="628" class="gh"/>
+          <line x1="386" y1="620" x2="380" y2="628" class="gh"/>
+          <line x1="395" y1="620" x2="389" y2="628" class="gh"/>
+          <line x1="404" y1="620" x2="398" y2="628" class="gh"/>
+          <line x1="413" y1="620" x2="407" y2="628" class="gh"/>
+          <line x1="423" y1="620" x2="417" y2="628" class="gh"/>
+          <line x1="432" y1="620" x2="426" y2="628" class="gh"/>
+          <circle cx="280" cy="105" r="25" class="bd"/>
+          <rect x="225" y="142" width="110" height="147" class="bd"/>
+          <rect x="239" y="291" width="83" height="44" class="bd"/>
+          <polyline points="347,165 367,252 372,330 372,358" class="lm"/>
+          <polyline points="305,335 308,464 308,588" class="lm"/>
+          <rect x="289" y="604" width="41" height="16" class="bd"/>
+          <circle cx="347" cy="165" r="6" class="jn"/>
+          <path d="M337 161 A10 10 0 0 1 357 161" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="367" cy="252" r="6" class="jn"/>
+          <path d="M357 248 A10 10 0 0 1 377 248" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="372" cy="330" r="6" class="jn"/>
+          <path d="M362 326 A10 10 0 0 1 382 326" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="305" cy="335" r="6" class="jn"/>
+          <path d="M295 331 A10 10 0 0 1 315 331" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="308" cy="464" r="6" class="jn"/>
+          <path d="M298 460 A10 10 0 0 1 318 460" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="308" cy="588" r="6" class="jn"/>
+          <path d="M298 584 A10 10 0 0 1 318 584" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="370" cy="284" r="3.5" class="wd"/>
+          <line x1="370" y1="284" x2="370" y2="323" class="wl" marker-end="url(#fbd-mr)"/>
+          <circle cx="321" cy="445" r="3.5" class="wd"/>
+          <line x1="321" y1="445" x2="321" y2="484" class="wl" marker-end="url(#fbd-mr)"/>
+          <line x1="308" y1="689" x2="308" y2="621" class="gl" marker-end="url(#fbd-mg)"/>
+          <polyline points="213,165 193,252 188,330 188,358" class="lm"/>
+          <polyline points="255,335 252,464 252,588" class="lm"/>
+          <rect x="234" y="604" width="41" height="16" class="bd"/>
+          <circle cx="213" cy="165" r="6" class="jn"/>
+          <path d="M203 161 A10 10 0 0 1 223 161" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="193" cy="252" r="6" class="jn"/>
+          <path d="M183 248 A10 10 0 0 1 203 248" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="188" cy="330" r="6" class="jn"/>
+          <path d="M178 326 A10 10 0 0 1 198 326" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="255" cy="335" r="6" class="jn"/>
+          <path d="M245 331 A10 10 0 0 1 265 331" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="252" cy="464" r="6" class="jn"/>
+          <path d="M242 460 A10 10 0 0 1 262 460" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="252" cy="588" r="6" class="jn"/>
+          <path d="M242 584 A10 10 0 0 1 262 584" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="190" cy="284" r="3.5" class="wd"/>
+          <line x1="190" y1="284" x2="190" y2="323" class="wl" marker-end="url(#fbd-mr)"/>
+          <circle cx="239" cy="445" r="3.5" class="wd"/>
+          <line x1="239" y1="445" x2="239" y2="484" class="wl" marker-end="url(#fbd-mr)"/>
+          <line x1="252" y1="689" x2="252" y2="621" class="gl" marker-end="url(#fbd-mg)"/>
+          <circle cx="280" cy="289" r="6" class="jn"/>
+          <path d="M270 285 A10 10 0 0 1 290 285" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="280" cy="314" r="6" class="jn"/>
+          <path d="M280 310 A0.01 0.01 0 0 1 280 310" class="ar" marker-end="url(#fbd-mb)"/>
+          <circle cx="280" cy="215" r="3.5" class="wd"/>
+          <line x1="280" y1="215" x2="280" y2="254" class="wl" marker-end="url(#fbd-mr)"/>
+          <circle cx="280" cy="314" r="3.5" class="wd"/>
+          <line x1="280" y1="314" x2="280" y2="353" class="wl" marker-end="url(#fbd-mr)"/>
+          <g class="tg w">
+          <circle cx="256" cy="215" r="11"/>
+          <text x="256" y="219">W1</text>
+          </g>
+          <g class="tg w">
+          <circle cx="256" cy="323" r="11"/>
+          <text x="256" y="327">W2</text>
+          </g>
+          <g class="tg w">
+          <circle cx="166" cy="284" r="11"/>
+          <text x="166" y="288">W3</text>
+          </g>
+          <g class="tg w">
+          <circle cx="215" cy="445" r="11"/>
+          <text x="215" y="449">W4</text>
+          </g>
+          <g class="tg g">
+          <circle cx="321" cy="666" r="11"/>
+          <text x="321" y="670">R</text>
+          </g>
+          <g class="tg t">
+          <circle cx="258" cy="273" r="11"/>
+          <text x="258" y="276">J1</text>
+          </g>
+          <g class="tg t">
+          <circle cx="371" cy="149" r="11"/>
+          <text x="371" y="152">J2</text>
+          </g>
+          <g class="tg t">
+          <circle cx="391" cy="236" r="11"/>
+          <text x="391" y="240">J3</text>
+          </g>
+          <g class="tg t">
+          <circle cx="396" cy="314" r="11"/>
+          <text x="396" y="318">J4</text>
+          </g>
+          <g class="tg t">
+          <circle cx="329" cy="319" r="11"/>
+          <text x="329" y="322">J5</text>
+          </g>
+          <g class="tg t">
+          <circle cx="332" cy="448" r="11"/>
+          <text x="332" y="451">J6</text>
+          </g>
+          <g class="tg t">
+          <circle cx="332" cy="572" r="11"/>
+          <text x="332" y="575">J7</text>
+          </g>
+          </svg>
+      </div>
+      <figcaption>Schematic humanoid with weights W1 to W4, joint torques J1 to J7 and the ground reaction R at each foot. Not to scale.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ § 02 — Loads ============ -->
+  <section class="section container" id="loads">
+    <header class="section-head">
+      <span class="sec-num">§ 02</span>
+      <h2>Loads</h2>
+      <span class="page-num">— 02 / 04 —</span>
+    </header>
+    <div class="art-prose">
+      <p>Each part is lumped into one weight. The parts add up to the total, and the floor splits it evenly because the stance is symmetric. <em>W = m × 9.81</em>, and the tags match Fig. 1.</p>
+    </div>
+    <div class="printout" style="margin-top:28px">
+      <div class="sprockets" aria-hidden="true"></div>
+      <div class="print-body">
+          <div class="pl"><span class="ln">0010</span><span>W1 WAIST GROUP                9.889 KG    97.0 N</span></div>
+          <div class="pl"><span class="ln">0020</span><span>W2 PELVIS                     3.813 KG    37.4 N</span></div>
+          <div class="pl"><span class="ln">0030</span><span>W3 EACH ARM                   3.519 KG   34.52 N</span></div>
+          <div class="pl"><span class="ln">0040</span><span>W4 EACH LEG                   7.186 KG   70.49 N</span></div>
+          <div class="pl"><span class="ln">0050</span><span>SUMTOTAL, WHOLE ROBOT        35.112 KG   344.5 N</span></div>
+          <div class="pl"><span class="ln">0060</span><span>R  GROUND, EACH FOOT                     172.2 N</span></div>
+      </div>
+      <div class="sprockets sprockets--right" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- ============ § 03 — Limits ============ -->
+  <section class="section container" id="limits">
+    <header class="section-head">
+      <span class="sec-num sec-num--alt">§ 03</span>
+      <h2>Joint limits at 85%</h2>
+      <span class="page-num">— 03 / 04 —</span>
+    </header>
+    <div class="art-prose">
+      <p>“Max lever” is how far the carried weight can sit from a joint axis before 85% of its torque is used. It needs only the weight and the limit, so no geometry. Joints J1–J7, torques in N·m.</p>
+    </div>
+    <div class="table-wrap" style="margin-top:28px">
+      <table class="data-table">
+        <thead><tr><th>Tag</th><th>Joint</th><th class="r">Rated</th><th class="r">85%</th><th class="r">Carried kg</th><th class="r">Carried N</th><th class="r">Max lever</th></tr></thead>
+        <tbody>
+            <tr class="muted"><td class="ref">J1</td><td>Waist yaw</td><td class="r">88</td><td class="r">74.8</td><td class="r">—</td><td class="r">—</td><td class="r">vertical axis</td></tr>
+            <tr><td class="ref">J1</td><td>Waist roll</td><td class="r">50</td><td class="r">42.5</td><td class="r">16.683</td><td class="r">163.7</td><td class="r">26.0 cm</td></tr>
+            <tr><td class="ref">J1</td><td>Waist pitch</td><td class="r">50</td><td class="r">42.5</td><td class="r">16.636</td><td class="r">163.2</td><td class="r">26.0 cm</td></tr>
+            <tr><td class="ref">J2</td><td>Shoulder pitch</td><td class="r">25</td><td class="r">21.25</td><td class="r">3.519</td><td class="r">34.5</td><td class="r">61.6 cm</td></tr>
+            <tr><td class="ref">J2</td><td>Shoulder roll</td><td class="r">25</td><td class="r">21.25</td><td class="r">2.801</td><td class="r">27.5</td><td class="r">77.3 cm</td></tr>
+            <tr class="muted"><td class="ref">J2</td><td>Shoulder yaw</td><td class="r">25</td><td class="r">21.25</td><td class="r">—</td><td class="r">—</td><td class="r">vertical axis</td></tr>
+            <tr><td class="ref">J3</td><td>Elbow</td><td class="r">25</td><td class="r">21.25</td><td class="r">1.424</td><td class="r">14.0</td><td class="r">152.1 cm</td></tr>
+            <tr class="muted"><td class="ref">J4</td><td>Wrist roll</td><td class="r">25</td><td class="r">21.25</td><td class="r">—</td><td class="r">—</td><td class="r">vertical axis</td></tr>
+            <tr><td class="ref">J4</td><td>Wrist pitch</td><td class="r">5</td><td class="r">4.25</td><td class="r">0.739</td><td class="r">7.2</td><td class="r">58.7 cm</td></tr>
+            <tr><td class="ref">J4</td><td>Wrist yaw</td><td class="r">5</td><td class="r">4.25</td><td class="r">0.255</td><td class="r">2.5</td><td class="r">170.2 cm</td></tr>
+            <tr><td class="ref">J5</td><td>Hip pitch</td><td class="r">88</td><td class="r">74.8</td><td class="r">27.93</td><td class="r">274.0</td><td class="r">27.3 cm</td></tr>
+            <tr><td class="ref">J5</td><td>Hip roll</td><td class="r">88</td><td class="r">74.8</td><td class="r">29.28</td><td class="r">287.2</td><td class="r">26.0 cm</td></tr>
+            <tr class="muted"><td class="ref">J5</td><td>Hip yaw</td><td class="r">88</td><td class="r">74.8</td><td class="r">—</td><td class="r">—</td><td class="r">vertical axis</td></tr>
+            <tr><td class="ref">J6</td><td>Knee</td><td class="r">139</td><td class="r">118.15</td><td class="r">32.50</td><td class="r">318.8</td><td class="r">37.1 cm</td></tr>
+            <tr><td class="ref">J7</td><td>Ankle pitch</td><td class="r">50</td><td class="r">42.5</td><td class="r">34.43</td><td class="r">337.8</td><td class="r">12.6 cm</td></tr>
+            <tr><td class="ref">J7</td><td>Ankle roll</td><td class="r">50</td><td class="r">42.5</td><td class="r">34.50</td><td class="r">338.5</td><td class="r">12.6 cm</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ § 04 — Notes ============ -->
+  <section class="section container" id="notes">
+    <header class="section-head">
+      <span class="sec-num">§ 04</span>
+      <h2>Notes</h2>
+      <span class="page-num">— 04 / 04 —</span>
+    </header>
+    <div class="cards art-note-grid">
+      <article class="card">
+        <div class="card-head"><span>N.01</span><span class="accent">Arms</span></div>
+        <div class="card-body"><p>Arm joints carry the weight beyond them with the arm hanging, so shoulder yaw and wrist roll sit on vertical axes and take no gravity moment.</p></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><span>N.02</span><span class="accent">Legs and waist</span></div>
+        <div class="card-body"><p>Levers use the weight above each joint, as in one-leg support, the worst case. Hip yaw and waist yaw are vertical axes.</p></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><span>N.03</span><span class="accent">Waist group</span></div>
+        <div class="card-body"><p>Three waist-link masses from the page: 0.244, 0.047 and 9.598 kg. <span class="art-tbc">TBC</span> the page lists 9.598 kg on the waist-pitch row only.</p></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><span>N.04</span><span class="accent">Source</span></div>
+        <div class="card-body"><p>OpenG1 actuator build guide, torque and mass table (29-DOF). Not affiliated with Unitree.</p></div>
+      </article>
+    </div>
+  </section>
+</main>
+
+<!-- ============ Footer ============ -->
+<footer class="site-footer container">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="brand">
+        <svg class="brand-mark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="s-ink" cx="20" cy="20" r="18.5" fill="none" stroke-width="1"/>
+        <path class="s-acc" d="M20 1V39M1 20H39" fill="none" stroke-width="0.6" stroke-dasharray="4 1.5 1 1.5"/>
+        <path class="s-ink" data-art="logo" fill="none" stroke-width="1.3"/>
+      </svg>
+        <span class="brand-name">OpenG1</span>
+      </div>
+      <p>An open-source, 3D-printable humanoid robot based on the Unitree G1. Not affiliated with Unitree.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Project">
+      <h3>Project</h3>
+      <ul>
+        <li><a href="https://open3dhumanoid.github.io/index.html#robot">The robot</a></li>
+        <li><a href="https://open3dhumanoid.github.io/index.html#status">Roadmap</a></li>
+        <li><a href="https://open3dhumanoid.github.io/index.html#follow">Updates</a></li>
+        <li><a href="#">FAQ</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="Learn">
+      <h3>Learn</h3>
+      <ul>
+        <li><a href="https://open3dhumanoid.github.io/development.html">Development log</a></li>
+        <li><a href="https://open3dhumanoid.github.io/guides.html">Build guides</a></li>
+        <li><a href="#">Bill of materials</a></li>
+        <li><a href="#">Safety</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-nav" aria-label="Community">
+      <h3>Community</h3>
+      <ul>
+        <li><a href="https://open3dhumanoid.github.io/team.html">Team</a></li>
+        <li><a href="https://open3dhumanoid.github.io/team.html#collaborators">Collaborators</a></li>
+        <li><a href="https://github.com/open3dhumanoid">Source code</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <dl class="title-block title-block--footer">
+    <div class="wide"><dt>Project</dt><dd class="caps">OpenG1</dd></div>
+    <div><dt>Sheet</dt><dd>003-A</dd></div>
+    <div><dt>Size</dt><dd>A2</dd></div>
+    <div><dt>Scale</dt><dd>1 : 1</dd></div>
+    <div><dt>Date</dt><dd>23.11.26</dd></div>
+    <div><dt>Rev</dt><dd class="accent">R0</dd></div>
+  </dl>
+
+  <div class="footer-bottom">
+    <span>© OpenG1 project contributors</span>
+    <div class="scale" aria-hidden="true">
+      <div class="scale-bar"><span></span><span></span><span></span><span></span></div>
+      <div class="scale-labels"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span></div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
